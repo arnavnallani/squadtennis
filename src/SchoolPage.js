@@ -512,8 +512,12 @@ function LoginModal({ onClose, onLogin }) {
   const [password, setPassword] = useState('');
   const [err,      setErr]      = useState('');
 
-  const submit = () => {
-    const result = loginUser({ email, password });
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    const result = await loginUser({ email, password });
+    setBusy(false);
     if (result.error) { setErr(result.error); return; }
     onLogin(result.session);
     onClose();
@@ -534,7 +538,7 @@ function LoginModal({ onClose, onLogin }) {
           <input className="finput" type="password" value={password} onChange={e => { setPassword(e.target.value); setErr(''); }} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && submit()} />
         </div>
         {err && <div className="ferr">{err}</div>}
-        <button className="btn-primary" onClick={submit} disabled={!email || !password}>Sign In</button>
+        <button className="btn-primary" onClick={submit} disabled={!email || !password || busy}>{busy ? 'Signing in…' : 'Sign In'}</button>
       </div>
     </div>
   );
@@ -549,8 +553,12 @@ function RegisterModal({ school, onClose, onLogin }) {
 
   const upd = (key, val) => { setF(x => ({ ...x, [key]: val })); setErr(''); };
 
-  const submit = () => {
-    const result = registerUser({ ...f });
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    const result = await registerUser({ ...f });
+    setBusy(false);
     if (result.error) { setErr(result.error); return; }
     onLogin(result.session);
     onClose();
@@ -603,8 +611,8 @@ function RegisterModal({ school, onClose, onLogin }) {
               <input className="finput" value={f.code} onChange={e => upd('code', e.target.value)} placeholder="Enter your join code" />
             </div>
             {err && <div className="ferr">{err}</div>}
-            <button className="btn-primary" onClick={submit} disabled={!f.firstName || !f.lastName || !f.email || !f.password || !f.code}>
-              Create Account
+            <button className="btn-primary" onClick={submit} disabled={!f.firstName || !f.lastName || !f.email || !f.password || !f.code || busy}>
+              {busy ? 'Creating account…' : 'Create Account'}
             </button>
             <button className="btn-ghost" onClick={() => { setStep(1); setErr(''); }}>← Back</button>
           </>
@@ -1496,28 +1504,40 @@ export default function SchoolPage({ defaultSlug }) {
   const slug = params.slug || defaultSlug;
   const [searchParams] = useSearchParams();
   const { user, login, logout: authLogout } = useAuth();
-  const [school,         setSchoolState] = useState(() => {
-    let data = getSchoolData(slug);
-    if (!data && slug === 'sjsu') {
-      saveSchoolData('sjsu', SJSU_SEED);
-      data = SJSU_SEED;
-    }
-    // Migrate existing SJSU data that predates the default bgImage
-    if (data && slug === 'sjsu' && !data.bgImage) {
-      data = { ...data, bgImage: '/team.jpeg' };
-      saveSchoolData('sjsu', data);
-    }
-    return data;
-  });
-  const [page,           setPage]        = useState('home');
-  const [modal,          setModal]       = useState(() => searchParams.get('open') || null);
+  const [school,         setSchoolState]    = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [page,           setPage]           = useState('home');
+  const [modal,          setModal]          = useState(() => searchParams.get('open') || null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [divisionStandings, setDivisionStandings] = useState([]);
+
+  // Load school data on mount
+  useEffect(() => {
+    setLoading(true);
+    getSchoolData(slug).then(data => {
+      setSchoolState(data);
+      setLoading(false);
+    });
+  }, [slug]);
+
+  // Load division standings (all enrolled schools)
+  useEffect(() => {
+    getAllEnrolledSchools().then(all => {
+      const standings = all
+        .map(s => {
+          const ms = s.matches || [];
+          return { slug: s.slug, name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
+        })
+        .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+      setDivisionStandings(standings);
+    });
+  }, []);
 
   // Persist school data helper
   const updateSchool = useCallback(patch => {
     setSchoolState(prev => {
       const next = { ...prev, ...patch };
-      saveSchoolData(slug, next);
+      saveSchoolData(slug, next).catch(console.error);
       return next;
     });
   }, [slug]);
@@ -1558,21 +1578,10 @@ export default function SchoolPage({ defaultSlug }) {
     return () => { const t = document.getElementById(`school-styles-${slug}`); if (t) t.remove(); };
   }, [slug, school]);
 
+  if (loading) return null;
   if (!school) return <SchoolNotFound slug={slug} />;
 
   const logout = () => { authLogout(); setModal(null); setPage('home'); };
-
-  // Compute standings — all enrolled schools, sorted by wins
-  const divisionStandings = (() => {
-    const allEnrolled = getAllEnrolledSchools();
-    return allEnrolled
-      .map(s => {
-        const data = getSchoolData(s.slug) || s;
-        const ms   = data.matches || [];
-        return { slug: s.slug, name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
-      })
-      .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-  })();
 
   return (
     <>

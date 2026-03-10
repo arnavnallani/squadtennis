@@ -303,11 +303,11 @@ export default function OnboardFlow() {
   };
 
   // ── Step 4: Roster choice → launch loading ────────────────────────────────
-  const launch = (skipRoster) => {
+  const launch = async (skipRoster) => {
     setRosterNow(!skipRoster);
     setStep('loading');
     const colors = getSchoolColors(schoolRecord.name);
-    const res = enrollSchool({
+    const res = await enrollSchool({
       name:        schoolRecord.name,
       claimCode:   schoolRecord.code,
       colors,
@@ -315,11 +315,11 @@ export default function OnboardFlow() {
     });
     // Auto-login the founding officer
     const session = {
-      id: `${res.slug}_${Date.now()}`,
-      firstName: form.firstName,
-      lastName:  form.lastName,
-      email:     form.email,
-      role:      'officer',
+      id:         `${res.slug}_${Date.now()}`,
+      firstName:  form.firstName,
+      lastName:   form.lastName,
+      email:      form.email,
+      role:       'officer',
       schoolSlug: res.slug,
     };
     login(session);

@@ -12,12 +12,11 @@ const UPCOMING_TOURNAMENTS = [
 ];
 
 // ─── TOP PLAYERS — pulled from all enrolled rosters in ladder order ────────────
-function getTopPlayers() {
+async function fetchTopPlayers() {
   const gentlemen = [];
   const ladies    = [];
-  for (const school of getAllEnrolledSchools()) {
-    const data   = getSchoolData(school.slug);
-    const roster = data?.roster || [];
+  for (const school of await getAllEnrolledSchools()) {
+    const roster = school.roster || [];
     const label  = school.name.split(' ').slice(0, 2).join(' ');
     for (const p of roster) {
       const entry = { name: p.name, school: label, role: p.role || '' };
@@ -29,24 +28,15 @@ function getTopPlayers() {
 }
 
 // ─── COMPUTE ENROLLED COLLEGES FOR STANDINGS ─────────────────────────────────
-function getColleges() {
-  const lsEnrolled = getAllEnrolledSchools();
-  const lsSlugs = new Set(lsEnrolled.map(s => s.slug));
-  // Static enrolled schools (e.g. SJSU) — wins not in localStorage, show 0-0
-  const staticEntries = STATIC_ENROLLED
-    .filter(s => !lsSlugs.has(s.slug))
-    .map(s => ({ name: s.name, wins: 0, losses: 0 }));
-  // localStorage enrolled schools — read match data
-  const lsEntries = lsEnrolled.map(s => {
-    const data = getSchoolData(s.slug) || s;
-    const ms = data.matches || [];
-    return { name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
-  });
-  return [...staticEntries, ...lsEntries].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+async function fetchColleges() {
+  const enrolled = await getAllEnrolledSchools();
+  return enrolled
+    .map(s => {
+      const ms = s.matches || [];
+      return { name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
+    })
+    .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 }
-
-// Static enrolled (hardcoded in data, e.g. SJSU)
-const STATIC_ENROLLED = SCHOOLS.filter(s => s.enrolled);
 
 // ─── ICONS ───────────────────────────────────────────────────────────────────
 const Icons = {
@@ -861,18 +851,14 @@ function FindCollegeModal({ onClose }) {
   // Auto-focus
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const trimmed = query.trim();
+  const [enrolledSchools, setEnrolledSchools] = useState([]);
+  useEffect(() => { getAllEnrolledSchools().then(setEnrolledSchools); }, []);
 
-  // Merge static enrolled + localStorage enrolled for default view
-  const lsEnrolled = getAllEnrolledSchools();
-  const defaultList = [
-    ...STATIC_ENROLLED,
-    ...lsEnrolled.filter(ls => !STATIC_ENROLLED.some(s => s.slug === ls.slug)),
-  ];
+  const trimmed = query.trim();
 
   const results = trimmed.length > 0
     ? SCHOOLS.filter(s => s.name.toLowerCase().includes(trimmed.toLowerCase()))
-    : defaultList;
+    : enrolledSchools;
 
   const noMatch = trimmed.length > 2 && results.length === 0;
 
@@ -983,17 +969,23 @@ function SquadNav({ onHome, onFindCollege }) {
     : null;
 
   // Resolve school display name and color for the school home pill
-  const schoolPillInfo = user ? (() => {
-    if (user.schoolSlug === 'sjsu') return { label: 'SJSU Tennis Home', color: '#c9a96e' };
-    const data = getSchoolData(user.schoolSlug);
-    const color = data?.accent || '#3dba6f';
-    const rawName = data?.name || user.schoolSlug.toUpperCase();
-    const abbrev = rawName
-      .replace(/University|College|State|of\b|the\b|at\b/gi, '')
-      .replace(/\s+/g, ' ').trim()
-      .split(' ').slice(0, 2).join(' ');
-    return { label: `${abbrev || user.schoolSlug.toUpperCase()} Tennis Home`, color };
-  })() : null;
+  const [schoolPillInfo, setSchoolPillInfo] = useState(null);
+  useEffect(() => {
+    if (!user) { setSchoolPillInfo(null); return; }
+    if (user.schoolSlug === 'sjsu') {
+      setSchoolPillInfo({ label: 'SJSU Tennis Home', color: '#c9a96e' });
+      return;
+    }
+    getSchoolData(user.schoolSlug).then(data => {
+      const color   = data?.colors?.accent || '#3dba6f';
+      const rawName = data?.name || user.schoolSlug.toUpperCase();
+      const abbrev  = rawName
+        .replace(/University|College|State|of\b|the\b|at\b/gi, '')
+        .replace(/\s+/g, ' ').trim()
+        .split(' ').slice(0, 2).join(' ');
+      setSchoolPillInfo({ label: `${abbrev || user.schoolSlug.toUpperCase()} Tennis Home`, color });
+    });
+  }, [user]);
 
   const viewItems = [
     { icon: Icons.bar, label: 'Standings', action: () => navigate('/standings') },
@@ -1270,26 +1262,17 @@ function TennisCourtBg() {
 function SquadHomePage() {
   useReveal();
   const navigate = useNavigate();
-  const [colleges, setColleges] = useState(() => getColleges());
-  const [topPlayers, setTopPlayers] = useState(() => getTopPlayers());
+  const [colleges, setColleges]     = useState([]);
+  const [topPlayers, setTopPlayers] = useState({ gentlemen: [], ladies: [] });
   const countdown = useCountdown(UCB_INVITATIONAL);
 
   const refresh = useCallback(() => {
-    setColleges(getColleges());
-    setTopPlayers(getTopPlayers());
+    fetchColleges().then(setColleges);
+    fetchTopPlayers().then(setTopPlayers);
   }, []);
 
   useEffect(() => {
-    // refresh when another tab updates localStorage
-    window.addEventListener('storage', refresh);
-    // refresh when this tab regains focus
-    document.addEventListener('visibilitychange', refresh);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      document.removeEventListener('visibilitychange', refresh);
-      window.removeEventListener('focus', refresh);
-    };
+    refresh();
   }, [refresh]);
 
   return (
@@ -1435,9 +1418,11 @@ function SquadHomePage() {
 // ─── STANDINGS PAGE ───────────────────────────────────────────────────────────
 function SquadStandingsPage() {
   useReveal();
-  const [query, setQuery] = useState('');
+  const [query, setQuery]           = useState('');
+  const [allColleges, setAllColleges] = useState([]);
 
-  const allColleges = getColleges();
+  useEffect(() => { fetchColleges().then(setAllColleges); }, []);
+
   const filtered = allColleges.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );

@@ -3,18 +3,11 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import SquadApp, { SquadHomePage, SquadStandingsPage, SquadCodesPage } from './SquadHome';
 import OnboardFlow from './OnboardFlow';
-import SchoolPage, { SJSU_SEED } from './SchoolPage';
+import SchoolPage from './SchoolPage';
 import { LoginPage, RegisterPage } from './AuthPages';
 import { AuthProvider } from './AuthContext';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { getSchoolData, saveSchoolData } from './data/schoolStore';
-
-// Seed static enrolled schools into localStorage on first load so
-// getTopPlayers() works correctly before the user visits a school page.
-if (!getSchoolData('sjsu')) {
-  saveSchoolData('sjsu', SJSU_SEED);
-}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

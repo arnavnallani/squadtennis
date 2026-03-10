@@ -124,12 +124,12 @@ export function LoginPage() {
 
   const set = k => e => setF(x => ({ ...x, [k]: e.target.value }));
 
-  const submit = e => {
+  const submit = async e => {
     e.preventDefault();
     setErr('');
     if (!f.email || !f.password) { setErr('Both fields are required.'); return; }
     setBusy(true);
-    const { session, error } = loginUser(f);
+    const { session, error } = await loginUser(f);
     setBusy(false);
     if (error) { setErr(error); return; }
     login(session);
@@ -177,27 +177,33 @@ export function RegisterPage() {
   const returnTo = params.get('returnTo') || '/';
 
   const [f, setF] = useState({ code: '', firstName: '', lastName: '', email: '', password: '' });
-  const [resolved, setResolved] = useState(null); // { schoolSlug, role } once code valid
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [resolved, setResolved]     = useState(null); // { schoolSlug, role } once code valid
+  const [resolving, setResolving]   = useState(false);
+  const [err, setErr]               = useState('');
+  const [busy, setBusy]             = useState(false);
 
   const set = k => e => {
     const val = e.target.value;
     setF(x => ({ ...x, [k]: val }));
     if (k === 'code') {
-      const r = resolveCode(val);
-      setResolved(r);
       if (err) setErr('');
+      const upper = val.toUpperCase().trim();
+      if (upper.length === 6) {
+        setResolving(true);
+        resolveCode(upper).then(r => { setResolved(r); setResolving(false); });
+      } else {
+        setResolved(null);
+      }
     }
   };
 
-  const submit = e => {
+  const submit = async e => {
     e.preventDefault();
     setErr('');
     if (!resolved) { setErr('Invalid join code.'); return; }
     if (!f.firstName || !f.lastName || !f.email || !f.password) { setErr('All fields are required.'); return; }
     setBusy(true);
-    const { session, error } = registerUser(f);
+    const { session, error } = await registerUser(f);
     setBusy(false);
     if (error) { setErr(error); return; }
     login(session);
@@ -223,7 +229,9 @@ export function RegisterPage() {
               autoFocus
               style={{ textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'var(--font-mono)' }}
             />
-            {resolved ? (
+            {resolving ? (
+              <div className="auth-code-hint">Checking code…</div>
+            ) : resolved ? (
               <div className="auth-code-chip">
                 <span className="auth-code-chip-dot" />
                 {roleLabel}

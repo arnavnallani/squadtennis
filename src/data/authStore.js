@@ -1,107 +1,71 @@
-import { getEnrolledIndex, getSchoolData, getSchoolUsers, addSchoolUser } from './schoolStore';
+import { supabase } from '../lib/supabase';
 
-// ─── SJSU HARDCODED CODES (mirrors App.js constants) ─────────────────────────
-const SJSU_OFFICER_CODE = 'SJSU2026';
-const SJSU_PLAYER_CODE  = 'SPARTAN24';
-
-const SESSION_KEY = 'sq_session';
-
-// ─── SESSION ──────────────────────────────────────────────────────────────────
-export function getCurrentUser() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
-  catch { return null; }
-}
-
-export function setCurrentUser(user) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-}
-
-export function clearCurrentUser() {
-  localStorage.removeItem(SESSION_KEY);
-}
-
-// ─── SJSU USER LIST ───────────────────────────────────────────────────────────
-function getSJSUUsers() {
-  try { return JSON.parse(localStorage.getItem('sjsu_users') || '[]'); }
-  catch { return []; }
-}
-
-function addSJSUUser(user) {
-  const arr = getSJSUUsers();
-  localStorage.setItem('sjsu_users', JSON.stringify([...arr, user]));
-}
-
-// ─── RESOLVE CODE → { schoolSlug, role } ─────────────────────────────────────
-export function resolveCode(raw) {
+// ─── RESOLVE JOIN CODE → { schoolSlug, role } ─────────────────────────────────
+export async function resolveCode(raw) {
   const code = (raw || '').toUpperCase().trim();
-  if (!code) return null;
-  if (code === SJSU_OFFICER_CODE) return { schoolSlug: 'sjsu', role: 'officer' };
-  if (code === SJSU_PLAYER_CODE)  return { schoolSlug: 'sjsu', role: 'player' };
-  for (const slug of getEnrolledIndex()) {
-    const school = getSchoolData(slug);
-    if (!school) continue;
-    if (school.officerCode === code) return { schoolSlug: slug, role: 'officer' };
-    if (school.playerCode  === code) return { schoolSlug: slug, role: 'player' };
-  }
+  if (code.length !== 6) return null;
+  const { data } = await supabase
+    .from('schools')
+    .select('slug, officer_code, player_code')
+    .or(`officer_code.eq.${code},player_code.eq.${code}`)
+    .limit(1);
+  if (!data || data.length === 0) return null;
+  const row = data[0];
+  if (row.officer_code === code) return { schoolSlug: row.slug, role: 'officer' };
+  if (row.player_code  === code) return { schoolSlug: row.slug, role: 'player' };
   return null;
 }
 
 // ─── REGISTER ─────────────────────────────────────────────────────────────────
-export function registerUser({ code, firstName, lastName, email, password }) {
-  const resolved = resolveCode(code);
+export async function registerUser({ code, firstName, lastName, email, password }) {
+  const resolved = await resolveCode(code);
   if (!resolved) return { error: 'Invalid join code.' };
   const { schoolSlug, role } = resolved;
 
-  if (schoolSlug === 'sjsu') {
-    if (getSJSUUsers().some(u => u.email === email)) return { error: 'Email already registered.' };
-    const user = { id: `sjsu_${Date.now()}`, firstName, lastName, email, password, role, schoolSlug };
-    addSJSUUser(user);
-    const session = { id: user.id, firstName, lastName, email, role, schoolSlug };
-    setCurrentUser(session);
-    return { session };
-  }
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { firstName, lastName, schoolSlug, role } },
+  });
+  if (authError) return { error: authError.message };
 
-  if (getSchoolUsers(schoolSlug).some(u => u.email === email)) return { error: 'Email already registered.' };
-  const user = { id: `${schoolSlug}_${Date.now()}`, firstName, lastName, email, password, role, schoolSlug };
-  addSchoolUser(schoolSlug, user);
-  const session = { id: user.id, firstName, lastName, email, role, schoolSlug };
-  setCurrentUser(session);
-  return { session };
+  const userId = authData.user?.id;
+  if (!userId) return { error: 'Registration failed. Please try again.' };
+
+  const { error: profileError } = await supabase.from('profiles').insert({
+    id:          userId,
+    first_name:  firstName,
+    last_name:   lastName,
+    school_slug: schoolSlug,
+    role,
+  });
+  if (profileError) return { error: profileError.message };
+
+  return { session: { id: userId, firstName, lastName, email, role, schoolSlug } };
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-export function loginUser({ email, password }) {
-  // SJSU users
-  const sjsuFound = getSJSUUsers().find(u => u.email === email && u.password === password);
-  if (sjsuFound) {
-    const session = {
-      id: sjsuFound.id,
-      firstName: sjsuFound.firstName || (sjsuFound.name || '').split(' ')[0],
-      lastName:  sjsuFound.lastName  || (sjsuFound.name || '').split(' ').slice(1).join(' '),
-      email: sjsuFound.email,
-      role: sjsuFound.role,
-      schoolSlug: 'sjsu',
-    };
-    setCurrentUser(session);
-    return { session };
-  }
+export async function loginUser({ email, password }) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: 'Invalid email or password.' };
 
-  // All other enrolled schools
-  for (const slug of getEnrolledIndex()) {
-    const found = getSchoolUsers(slug).find(u => u.email === email && u.password === password);
-    if (found) {
-      const session = {
-        id: found.id,
-        firstName: found.firstName || (found.name || '').split(' ')[0],
-        lastName:  found.lastName  || (found.name || '').split(' ').slice(1).join(' '),
-        email: found.email,
-        role: found.role,
-        schoolSlug: slug,
-      };
-      setCurrentUser(session);
-      return { session };
-    }
-  }
+  const userId = data.user.id;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
-  return { error: 'Invalid email or password.' };
+  if (!profile) return { error: 'Account not found. Please register first.' };
+
+  return {
+    session: {
+      id:         userId,
+      firstName:  profile.first_name,
+      lastName:   profile.last_name,
+      email:      data.user.email,
+      role:       profile.role,
+      schoolSlug: profile.school_slug,
+    },
+  };
 }
