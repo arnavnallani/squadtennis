@@ -704,13 +704,15 @@ body::before {
 .sq-hb-item .ic { width: 14px; height: 14px; opacity: .6; flex-shrink: 0; }
 .sq-hb-item:hover .ic { opacity: 1; }
 
+@media (max-width: 900px) {
+  .sq-nav-left .sq-dd-wrap { display: none; }
+  .sq-hb-wrap { display: block; }
+  .sq-pill { display: none; }
+}
 @media (max-width: 600px) {
   .sq-nav { padding: 0 10px; }
   .sq-nav-logo { font-size: 13px; letter-spacing: 2px; }
   .sq-nav-left, .sq-nav-right { gap: 2px; }
-  .sq-pill { padding: 5px 10px; font-size: 11px; letter-spacing: 0; }
-  .sq-nav-left .sq-dd-wrap { display: none; }
-  .sq-hb-wrap { display: block; }
 }
 `;
 
@@ -808,23 +810,32 @@ function HamburgerMenu({ sections }) {
         <div className="sq-hb-dd">
           {sections.map(sec => (
             <div key={sec.label}>
-              <button
-                className={`sq-hb-sec-btn${expanded === sec.label ? ' open' : ''}`}
-                onClick={() => setExpanded(s => s === sec.label ? null : sec.label)}
-              >
-                <span className="ic">{sec.icon}</span>
-                {sec.label}
-                <span className="sq-hb-chev">{Icons.chevronDown}</span>
-              </button>
-              {expanded === sec.label && (
-                <div className="sq-hb-items">
-                  {sec.items.filter(item => !item.sep).map((item, i) => (
-                    <button key={i} className="sq-hb-item" onClick={() => { item.action(); setOpen(false); setExpanded(null); }}>
-                      <span className="ic">{item.icon}</span>
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+              {sec.action ? (
+                <button className="sq-hb-sec-btn" onClick={() => { sec.action(); setOpen(false); }}>
+                  <span className="ic">{sec.icon}</span>
+                  {sec.label}
+                </button>
+              ) : (
+                <>
+                  <button
+                    className={`sq-hb-sec-btn${expanded === sec.label ? ' open' : ''}`}
+                    onClick={() => setExpanded(s => s === sec.label ? null : sec.label)}
+                  >
+                    <span className="ic">{sec.icon}</span>
+                    {sec.label}
+                    <span className="sq-hb-chev">{Icons.chevronDown}</span>
+                  </button>
+                  {expanded === sec.label && (
+                    <div className="sq-hb-items">
+                      {sec.items.filter(item => !item.sep).map((item, i) => (
+                        <button key={i} className="sq-hb-item" onClick={() => { item.action(); setOpen(false); setExpanded(null); }}>
+                          <span className="ic">{item.icon}</span>
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}
@@ -997,6 +1008,7 @@ function SquadNav({ onHome, onFindCollege }) {
 
   const hamburgerSections = [
     { label: 'View', icon: Icons.bar, items: viewItems },
+    { label: 'Find a College', icon: Icons.search, action: onFindCollege },
   ];
 
   return (

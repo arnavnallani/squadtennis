@@ -295,6 +295,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 .hb-item:hover{background:var(--c-surf2);color:var(--c-text)}
 .hb-item .ic{width:14px;height:14px;opacity:.6;flex-shrink:0}
 .hb-item:hover .ic{opacity:1}
+@media(max-width:900px){
+  .nav-left .dd-wrap{display:none}
+  .hb-wrap{display:block}
+}
 @media(max-width:600px){
   nav{padding:0 10px}
   .nav-logo{font-size:13px;letter-spacing:2px}
@@ -303,8 +307,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
   .sq-home-pill-label{display:none}
   .pill{padding:5px 8px;font-size:12px}
   .welcome-tag{padding:4px 8px;font-size:11px}
-  .nav-left .dd-wrap{display:none}
-  .hb-wrap{display:block}
 }
 `;
 }
