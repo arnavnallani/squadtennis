@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Load profile from DB given an auth user
   async function loadProfile(authUser) {
@@ -29,11 +29,16 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    // Restore existing session on mount
+    // Restore existing session on mount (with timeout to prevent infinite white screen)
+    const timeout = setTimeout(() => setLoading(false), 5000);
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout);
       if (session?.user) {
         await loadProfile(session.user);
       }
+      setLoading(false);
+    }).catch(() => {
+      clearTimeout(timeout);
       setLoading(false);
     });
 
@@ -56,8 +61,6 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
     setUser(null);
   }, []);
-
-  if (loading) return null;
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
