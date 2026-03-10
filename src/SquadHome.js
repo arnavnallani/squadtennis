@@ -223,8 +223,10 @@ body::before {
   display: flex; align-items: center;
 }
 .sq-tourn-bar-items {
-  display: flex; align-items: stretch; flex: 1; overflow: hidden; height: 100%;
+  display: flex; align-items: stretch; flex: 1; overflow-x: auto; height: 100%;
+  scrollbar-width: none;
 }
+.sq-tourn-bar-items::-webkit-scrollbar { display: none; }
 .sq-tourn-bar-item {
   display: flex; align-items: center; gap: 10px;
   padding: 0 20px; border-right: 1px solid var(--c-border);
@@ -670,7 +672,55 @@ body::before {
   .sq-home-grid { grid-template-columns: 1fr; }
   .sq-side-panel { border-left: none; border-top: 1px solid var(--c-border); min-height: 280px; }
   .sq-hero-h1 { max-width: 90%; font-size: clamp(48px, 10vw, 80px); }
-  .sq-tourn-bar-item:nth-child(n+3) { display: none; }
+}
+/* ── HAMBURGER MENU ── */
+.sq-hb-wrap { position: relative; display: none; }
+.sq-hb-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 7px;
+  background: none; border: none; cursor: pointer;
+  color: var(--c-muted); transition: color .18s, background .18s;
+}
+.sq-hb-btn:hover, .sq-hb-btn.active { color: var(--c-text); background: var(--c-surf2); }
+.sq-hb-lines { display: flex; flex-direction: column; gap: 4px; width: 16px; }
+.sq-hb-lines span { display: block; width: 16px; height: 1.5px; background: currentColor; border-radius: 1px; }
+.sq-hb-dd {
+  position: absolute; top: calc(100% + 7px); left: 0;
+  background: rgba(13,13,13,.97); backdrop-filter: blur(24px);
+  border: 1px solid var(--c-border2); border-radius: var(--r);
+  min-width: 200px; padding: 5px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.03);
+  animation: sqDdIn .15s var(--spring); z-index: 200;
+}
+.sq-hb-sec-btn {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 8px 11px; border-radius: 6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--c-muted); font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  transition: background .12s, color .12s; text-align: left;
+}
+.sq-hb-sec-btn:hover, .sq-hb-sec-btn.open { color: var(--c-text); background: var(--c-surf2); }
+.sq-hb-chev { width: 14px; height: 14px; margin-left: auto; transition: transform .2s var(--spring); flex-shrink: 0; }
+.sq-hb-sec-btn.open .sq-hb-chev { transform: rotate(180deg); }
+.sq-hb-items { padding: 2px 0 2px 20px; }
+.sq-hb-item {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 7px 11px; border-radius: 6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--c-muted); font-family: var(--font-ui); font-size: 13px;
+  transition: background .12s, color .12s; text-align: left;
+}
+.sq-hb-item:hover { background: var(--c-surf2); color: var(--c-text); }
+.sq-hb-item .ic { width: 14px; height: 14px; opacity: .6; flex-shrink: 0; }
+.sq-hb-item:hover .ic { opacity: 1; }
+
+@media (max-width: 600px) {
+  .sq-nav { padding: 0 10px; }
+  .sq-nav-logo { font-size: 13px; letter-spacing: 2px; }
+  .sq-nav-left, .sq-nav-right { gap: 2px; }
+  .sq-pill { padding: 5px 10px; font-size: 11px; letter-spacing: 0; }
+  .sq-nav-left .sq-dd-wrap { display: none; }
+  .sq-hb-wrap { display: block; }
 }
 `;
 
@@ -741,10 +791,55 @@ function NavMenu({ label, icon, items }) {
   return (
     <div className="sq-dd-wrap">
       <button className={`sq-nb${open ? ' active' : ''}`} onClick={() => setOpen(o => !o)}>
-        <span className="ic">{icon}</span>{label}
+        <span className="ic">{icon}</span><span className="sq-nb-label">{label}</span>
         <span className="chev ic">{Icons.chevronDown}</span>
       </button>
       {open && <Dropdown items={items} onClose={close} />}
+    </div>
+  );
+}
+
+// ─── HAMBURGER MENU ───────────────────────────────────────────────────────────
+function HamburgerMenu({ sections }) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(null);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  return (
+    <div className="sq-hb-wrap" ref={ref}>
+      <button className={`sq-hb-btn${open ? ' active' : ''}`} onClick={() => setOpen(o => !o)}>
+        <span className="sq-hb-lines"><span/><span/><span/></span>
+      </button>
+      {open && (
+        <div className="sq-hb-dd">
+          {sections.map(sec => (
+            <div key={sec.label}>
+              <button
+                className={`sq-hb-sec-btn${expanded === sec.label ? ' open' : ''}`}
+                onClick={() => setExpanded(s => s === sec.label ? null : sec.label)}
+              >
+                <span className="ic">{sec.icon}</span>
+                {sec.label}
+                <span className="sq-hb-chev">{Icons.chevronDown}</span>
+              </button>
+              {expanded === sec.label && (
+                <div className="sq-hb-items">
+                  {sec.items.filter(item => !item.sep).map((item, i) => (
+                    <button key={i} className="sq-hb-item" onClick={() => { item.action(); setOpen(false); setExpanded(null); }}>
+                      <span className="ic">{item.icon}</span>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -908,9 +1003,14 @@ function SquadNav({ onHome, onFindCollege }) {
     { icon: Icons.logout, label: 'Log Out', action: () => { logout(); setAccOpen(false); } },
   ];
 
+  const hamburgerSections = [
+    { label: 'View', icon: Icons.bar, items: viewItems },
+  ];
+
   return (
     <nav className="sq-nav">
       <div className="sq-nav-left">
+        <HamburgerMenu sections={hamburgerSections} />
         <NavMenu label="View" icon={Icons.bar} items={viewItems} />
         {user && schoolPillInfo && (
           <SchoolHomePill

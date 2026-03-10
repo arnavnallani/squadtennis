@@ -279,6 +279,33 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
   .home-info-grid,.tourn-grid,.act-grid{grid-template-columns:1fr}
   .sop-content{padding:0 24px 48px}
 }
+/* HAMBURGER MENU */
+.hb-wrap{position:relative;display:none}
+.hb-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;background:none;border:none;cursor:pointer;color:var(--c-muted);transition:color .18s,background .18s}
+.hb-btn:hover,.hb-btn.active{color:var(--c-text);background:var(--c-surf2)}
+.hb-lines{display:flex;flex-direction:column;gap:4px;width:16px}
+.hb-lines span{display:block;width:16px;height:1.5px;background:currentColor;border-radius:1px}
+.hb-dd{position:absolute;top:calc(100% + 7px);left:0;background:rgba(13,13,13,.97);backdrop-filter:blur(24px);border:1px solid var(--c-border2);border-radius:var(--r);min-width:200px;padding:5px;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:ddIn .15s var(--spring);z-index:200}
+.hb-sec-btn{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--c-muted);font-family:var(--font-ui);font-size:13px;font-weight:500;transition:background .12s,color .12s;text-align:left}
+.hb-sec-btn:hover,.hb-sec-btn.open{color:var(--c-text);background:var(--c-surf2)}
+.hb-chev{width:14px;height:14px;margin-left:auto;transition:transform .2s var(--spring);flex-shrink:0}
+.hb-sec-btn.open .hb-chev{transform:rotate(180deg)}
+.hb-items{padding:2px 0 2px 20px}
+.hb-item{display:flex;align-items:center;gap:9px;width:100%;padding:7px 11px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--c-muted);font-family:var(--font-ui);font-size:13px;transition:background .12s,color .12s;text-align:left}
+.hb-item:hover{background:var(--c-surf2);color:var(--c-text)}
+.hb-item .ic{width:14px;height:14px;opacity:.6;flex-shrink:0}
+.hb-item:hover .ic{opacity:1}
+@media(max-width:600px){
+  nav{padding:0 10px}
+  .nav-logo{font-size:13px;letter-spacing:2px}
+  .nav-left,.nav-right{gap:1px}
+  .sq-home-pill{padding:5px 8px}
+  .sq-home-pill-label{display:none}
+  .pill{padding:5px 8px;font-size:12px}
+  .welcome-tag{padding:4px 8px;font-size:11px}
+  .nav-left .dd-wrap{display:none}
+  .hb-wrap{display:block}
+}
 `;
 }
 
@@ -352,10 +379,55 @@ function NavMenu({ label, icon, items }) {
   return (
     <div className="dd-wrap">
       <button className={`nb${open ? ' active' : ''}`} onClick={() => setOpen(o => !o)}>
-        <span className="ic">{icon}</span>{label}
+        <span className="ic">{icon}</span><span className="nb-label">{label}</span>
         <span className="chev ic">{Icons.chevronDown}</span>
       </button>
       {open && <Dropdown items={items} onClose={close} />}
+    </div>
+  );
+}
+
+// ─── HAMBURGER MENU ───────────────────────────────────────────────────────────
+function HamburgerMenu({ sections }) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(null);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  return (
+    <div className="hb-wrap" ref={ref}>
+      <button className={`hb-btn${open ? ' active' : ''}`} onClick={() => setOpen(o => !o)}>
+        <span className="hb-lines"><span/><span/><span/></span>
+      </button>
+      {open && (
+        <div className="hb-dd">
+          {sections.map(sec => (
+            <div key={sec.label}>
+              <button
+                className={`hb-sec-btn${expanded === sec.label ? ' open' : ''}`}
+                onClick={() => setExpanded(s => s === sec.label ? null : sec.label)}
+              >
+                <span className="ic">{sec.icon}</span>
+                {sec.label}
+                <span className="hb-chev">{Icons.chevronDown}</span>
+              </button>
+              {expanded === sec.label && (
+                <div className="hb-items">
+                  {sec.items.filter(item => !item.sep).map((item, i) => (
+                    <button key={i} className="hb-item" onClick={() => { item.action(); setOpen(false); setExpanded(null); }}>
+                      <span className="ic">{item.icon}</span>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -395,12 +467,18 @@ function SchoolNav({ school, user, setModal, setPage, onLogout }) {
   // Abbreviate school name for logo
   const abbrev = school.name.replace(/University|College|State|of|the|at/gi, '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 2).join(' ');
 
+  const hamburgerSections = [
+    ...(editItems ? [{ label: 'Edit', icon: Icons.pencil, items: editItems }] : []),
+    { label: 'View', icon: Icons.eye, items: viewItems },
+  ];
+
   return (
     <nav>
       <div className="nav-left">
         <button className="sq-home-pill" onClick={() => navigate('/')}>
-          <span className="sq-home-pill-arrow">◂</span>Squad Tennis
+          <span className="sq-home-pill-arrow">◂</span><span className="sq-home-pill-label">Squad Tennis</span>
         </button>
+        <HamburgerMenu sections={hamburgerSections} />
         {editItems && <NavMenu label="Edit" icon={Icons.pencil} items={editItems} />}
         <NavMenu label="View" icon={Icons.eye} items={viewItems} />
       </div>
