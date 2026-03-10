@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth } from "./AuthContext";
-import { loginUser, registerUser } from "./data/authStore";
-import { getAllEnrolledSchools, getSchoolData } from "./data/schoolStore";
+
+// ─── ACCESS CODES ────────────────────────────────────────────────────────────
+const OFFICER_CODE = "SJSU2026";
+const PLAYER_CODE  = "SPARTAN24";
 
 // ─── REAL DATA ───────────────────────────────────────────────────────────────
 const INITIAL_MATCHES = [];
@@ -37,17 +38,20 @@ const INITIAL_ROSTER = [
   { id:22, name:"Sonya Son",             utr:0, year:"", major:"", team:"C", gender:"F", role:"",           wins:0, losses:0 },
 ];
 
-
-const TOURNAMENTS = [
-  { name: "UC Berkeley Golden Bears Invitationals", date: "Mar 21–22", teams: ["A","B"], notes: "No gas or team meal" },
-  { name: "UNR Wolf-Pack Invitational",             date: "Apr 10–12", teams: ["A","B","C"], notes: "Rental cars, gas & team meal provided" },
-  { name: "UCD Cowtown Showdown",                   date: "May 1–3",   teams: ["A","B"], notes: "Gas provided · Team C waitlisted" },
-];
-
-const ACTIVITIES = [
-  { name: "SF Day-Trip",        desc: "Cal Train from near campus to San Francisco for the day",       dates: ["Fri, Mar 13", "Sun, Mar 15", "Fri, Mar 27"] },
-  { name: "Santa Cruz Bonfire", desc: "Beach, boardwalk & bonfire with s'mores as the sun sets",       dates: ["Sun, Mar 29", "Fri, Apr 17", "Sun, Apr 19"] },
-  { name: "Riveting Retreat",   desc: "Single-night Airbnb stayover to share laughter and memories",   dates: ["Apr 24–25 (Fri–Sat)", "May 8–9 (Fri–Sat)", "May 9–10 (Sat–Sun)"] },
+const LEADERBOARD = [
+  { rank:1,  school:"UC Berkeley",          wins:0, losses:0 },
+  { rank:2,  school:"Stanford",             wins:0, losses:0 },
+  { rank:3,  school:"UC Davis",             wins:0, losses:0 },
+  { rank:4,  school:"CSU Sacramento",       wins:0, losses:0 },
+  { rank:5,  school:"UC Santa Cruz",        wins:0, losses:0 },
+  { rank:6,  school:"Santa Clara",          wins:0, losses:0 },
+  { rank:7,  school:"SJSU",                wins:0, losses:0 },
+  { rank:8,  school:"SF State",             wins:0, losses:0 },
+  { rank:9,  school:"St. Mary's",           wins:0, losses:0 },
+  { rank:10, school:"UC Merced",            wins:0, losses:0 },
+  { rank:11, school:"Fresno State",         wins:0, losses:0 },
+  { rank:12, school:"UNR",                  wins:0, losses:0 },
+  { rank:13, school:"Northeastern Oakland", wins:0, losses:0 },
 ];
 
 // ─── ICONS (all SVG — no emoji, no icon fonts) ───────────────────────────────
@@ -70,22 +74,18 @@ const Icons = {
   arrowDown: <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v8M3.5 7.5L7 11l3.5-3.5"/></svg>,
   arrowRight: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>,
   check: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l3.5 3.5L13 4.5"/></svg>,
-  // ── Tennis decorative icons (hand-drawn SVG) ──
-  tennisBall:   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"><circle cx="10" cy="10" r="8.5"/><path d="M2.5 8.5Q10 3 17.5 8.5"/><path d="M2.5 11.5Q10 17 17.5 11.5"/></svg>,
-  tennisRacket: <svg viewBox="0 0 18 26" fill="none" stroke="currentColor" strokeLinecap="round"><ellipse cx="9" cy="9.5" rx="7.5" ry="8.5" strokeWidth="1.2"/><line x1="3.5" y1="7" x2="14.5" y2="7" strokeWidth="0.7"/><line x1="2" y1="9.5" x2="16" y2="9.5" strokeWidth="0.7"/><line x1="3.5" y1="12" x2="14.5" y2="12" strokeWidth="0.7"/><line x1="6.5" y1="1.5" x2="6.5" y2="18" strokeWidth="0.7"/><line x1="9" y1="1" x2="9" y2="18" strokeWidth="0.7"/><line x1="11.5" y1="1.5" x2="11.5" y2="18" strokeWidth="0.7"/><line x1="9" y1="18" x2="9" y2="25.5" strokeWidth="2.2" strokeLinecap="round"/></svg>,
-  miniCourt:    <svg viewBox="0 0 32 20" fill="none" stroke="currentColor" strokeLinecap="round"><rect x="1" y="1" width="30" height="18" strokeWidth="1.1"/><line x1="16" y1="1" x2="16" y2="19" strokeWidth="1.3"/><line x1="1" y1="4.5" x2="31" y2="4.5" strokeWidth="0.7"/><line x1="1" y1="15.5" x2="31" y2="15.5" strokeWidth="0.7"/><line x1="7" y1="4.5" x2="7" y2="15.5" strokeWidth="0.7"/><line x1="25" y1="4.5" x2="25" y2="15.5" strokeWidth="0.7"/><line x1="7" y1="10" x2="25" y2="10" strokeWidth="0.7"/></svg>,
-  tennisPlayer: <svg viewBox="0 0 24 30" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="3.5" r="2.5"/><line x1="9" y1="6" x2="8" y2="17"/><line x1="9" y1="10" x2="19" y2="6.5"/><line x1="9" y1="10" x2="4" y2="13.5"/><line x1="8" y1="17" x2="14" y2="27"/><line x1="8" y1="17" x2="3" y2="26"/><ellipse cx="21.5" cy="5" rx="2.8" ry="3.8" transform="rotate(-35 21.5 5)" strokeWidth="1"/></svg>,
-  tennisNet:    <svg viewBox="0 0 30 14" fill="none" stroke="currentColor" strokeLinecap="round"><line x1="2" y1="2" x2="2" y2="13" strokeWidth="1.5"/><line x1="28" y1="2" x2="28" y2="13" strokeWidth="1.5"/><path d="M2 3.5Q15 5 28 3.5" strokeWidth="1.1"/><line x1="2" y1="13" x2="28" y2="13" strokeWidth="0.8"/><line x1="8" y1="4" x2="8" y2="13" strokeWidth="0.55"/><line x1="14" y1="4.5" x2="14" y2="13" strokeWidth="0.55"/><line x1="20" y1="4.5" x2="20" y2="13" strokeWidth="0.55"/><line x1="26" y1="4" x2="26" y2="13" strokeWidth="0.55"/><line x1="2" y1="8" x2="28" y2="8" strokeWidth="0.55"/><line x1="2" y1="11" x2="28" y2="11" strokeWidth="0.55"/></svg>,
 };
 
 // ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
 const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --c-bg:       #110f09;
-  --c-surf:     #181510;
-  --c-surf2:    #1e1b14;
+  --c-bg:       #070707;
+  --c-surf:     #0d0d0d;
+  --c-surf2:    #141414;
   --c-border:   rgba(255,255,255,.06);
   --c-border2:  rgba(255,255,255,.1);
   --c-gold:     #c9a96e;
@@ -101,7 +101,7 @@ const STYLES = `
   --r:          10px;
   --ease:       cubic-bezier(.25,.46,.45,.94);
   --spring:     cubic-bezier(.16,1,.3,1);
-  --font-disp:  'Barlow Condensed', sans-serif;
+  --font-disp:  'Bebas Neue', sans-serif;
   --font-ui:    'DM Sans', sans-serif;
   --font-mono:  'DM Mono', monospace;
 }
@@ -118,6 +118,31 @@ body {
   cursor: auto;
 }
 
+/* ── CURSOR ── */
+#csr {
+  position: fixed; z-index: 9999; pointer-events: none;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c-gold);
+  transform: translate(-50%,-50%);
+  transition: width .22s var(--spring), height .22s var(--spring), background .2s, opacity .2s;
+  will-change: transform;
+  top: 0; left: 0;
+}
+#csr.large {
+  width: 36px; height: 36px;
+  background: transparent;
+  border: 1.5px solid rgba(201,169,110,.55);
+}
+
+/* ── AMBIENT GLOW ── */
+.amb {
+  position: fixed; pointer-events: none; z-index: 0;
+  border-radius: 50%; filter: blur(140px);
+  animation: ambFloat 12s ease-in-out infinite alternate;
+}
+.amb-a { width:700px; height:700px; background:rgba(201,169,110,.06); top:-200px; left:-150px; }
+.amb-b { width:500px; height:500px; background:rgba(110,158,201,.05); bottom:-100px; right:-100px; animation-delay:-6s; }
+@keyframes ambFloat { from{transform:translate(0,0)} to{transform:translate(30px,40px)} }
 
 /* ── NOISE TEXTURE OVERLAY ── */
 body::before {
@@ -132,7 +157,7 @@ nav {
   height: var(--nav-h);
   display: flex; align-items: center;
   padding: 0 24px;
-  background: rgba(17,15,9,.75);
+  background: rgba(7,7,7,.75);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border-bottom: 1px solid var(--c-border);
@@ -141,13 +166,11 @@ nav {
 .nav-logo {
   font-family: var(--font-disp);
   font-size: 18px;
-  letter-spacing: 6px; text-transform: uppercase;
+  letter-spacing: 5px; text-transform: uppercase;
   color: var(--c-text); cursor: pointer;
   white-space: nowrap;
   position: absolute; left: 50%; transform: translateX(-50%);
-  transition: letter-spacing .35s var(--ease);
 }
-.nav-logo:hover { letter-spacing: 7px; }
 .nav-logo span { color: var(--c-gold); }
 
 .nav-left, .nav-right {
@@ -159,50 +182,40 @@ nav {
 /* Nav button */
 .nb {
   display: flex; align-items: center; gap: 5px;
-  padding: 6px 12px; border-radius: 7px;
+  padding: 6px 11px; border-radius: 7px;
   background: none; border: none; cursor: pointer;
-  font-family: var(--font-ui); font-size: 13px; font-weight: 500;
-  color: var(--c-muted); letter-spacing: 0;
-  transition: color .2s var(--ease), background .2s var(--ease);
-  position: relative;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--c-muted); letter-spacing: .4px;
+  transition: color .18s, background .18s;
 }
-.nb:hover, .nb.active { color: var(--c-text); background: rgba(255,255,255,.04); }
-.nb.active::after {
-  content: ''; position: absolute; bottom: 4px; left: 50%;
-  width: 3px; height: 3px; border-radius: 50%; background: var(--c-gold);
-  transform: translateX(-50%);
-}
+.nb:hover, .nb.active { color: var(--c-text); background: var(--c-surf2); }
 .nb .ic { width:14px; height:14px; display:flex; align-items:center; justify-content:center; }
-.nb .chev { width:13px; height:13px; opacity:.5; transition: transform .25s var(--spring), opacity .2s; }
-.nb.active .chev { transform: rotate(180deg); opacity: 1; }
+.nb .chev { width:14px; height:14px; transition: transform .2s var(--spring); }
+.nb.active .chev { transform: rotate(180deg); }
 
 /* Pill buttons */
 .pill {
-  padding: 7px 16px; border-radius: 8px; cursor: pointer;
-  font-family: var(--font-ui); font-size: 13px; font-weight: 500; letter-spacing: 0;
+  padding: 7px 18px; border-radius: 6px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
   background: none; border: 1px solid transparent;
-  color: var(--c-muted); transition: color .2s var(--ease), transform .18s var(--spring);
+  color: var(--c-muted); transition: all .18s;
 }
-.pill:hover { color: var(--c-text); transform: translateY(-1px); }
-.pill:active { transform: scale(.97); }
+.pill:hover { color: var(--c-text); }
 .pill.filled {
   background: none;
-  border: 1px solid rgba(201,169,110,.45);
+  border: 1px solid var(--c-gold);
   color: var(--c-gold);
-  transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), transform .18s var(--spring);
 }
-.pill.filled:hover { background: rgba(201,169,110,.07); color: var(--c-gold-hi); border-color: rgba(201,169,110,.65); box-shadow: 0 0 0 3px rgba(201,169,110,.06); transform: translateY(-1px); }
+.pill.filled:hover { background: rgba(201,169,110,.08); color: var(--c-gold-hi); border-color: var(--c-gold-hi); }
 
 .welcome-tag {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 12px; border-radius: 20px;
-  border: 1px solid rgba(201,169,110,.2);
-  background: rgba(201,169,110,.04);
-  font-family: var(--font-ui); font-size: 12px; font-weight: 500;
-  color: var(--c-gold); letter-spacing: 0;
-  transition: border-color .2s var(--ease), background .2s var(--ease);
+  border: 1px solid rgba(201,169,110,.25);
+  background: rgba(201,169,110,.05);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--c-gold); letter-spacing: .3px;
 }
-.welcome-tag:hover { border-color: rgba(201,169,110,.35); background: rgba(201,169,110,.07); }
 .welcome-tag .ic { width: 12px; height: 12px; }
 
 /* ── DROPDOWN ── */
@@ -346,21 +359,36 @@ nav {
   padding: 120px 72px 100px;
   min-height: 75vh; display: flex; flex-direction: column; justify-content: center;
   text-align: center;
-  background-color: #110f09;
+  background-color: #070707;
   background-image:
-    linear-gradient(to right, #110f09 0%, rgba(17,15,9,.5) 22%, rgba(17,15,9,.5) 78%, #110f09 100%),
-    linear-gradient(to bottom, rgba(17,15,9,.92) 0%, rgba(17,15,9,.65) 30%, rgba(17,15,9,.65) 70%, rgba(17,15,9,.97) 100%),
+    linear-gradient(to right, #070707 0%, rgba(7,7,7,.5) 22%, rgba(7,7,7,.5) 78%, #070707 100%),
+    linear-gradient(to bottom, rgba(7,7,7,.92) 0%, rgba(7,7,7,.65) 30%, rgba(7,7,7,.65) 70%, rgba(7,7,7,.97) 100%),
     url('/team.jpeg');
   background-size: cover;
   background-position: center;
 }
 
+/* Scan line animation */
+.hero::before {
+  content:''; position:absolute;
+  left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(201,169,110,.5) 40%, rgba(201,169,110,.5) 60%, transparent 100%);
+  animation: scanDown 2.8s var(--spring) .4s forwards;
+  opacity:0; top: var(--nav-h);
+}
+@keyframes scanDown {
+  0%  { top: var(--nav-h); opacity: 0 }
+  15% { opacity: .6 }
+  90% { opacity: 0 }
+  100%{ top: 85vh; opacity: 0 }
+}
 
 .hero-eyebrow {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--font-mono); font-size: 10px;
   color: var(--c-gold); letter-spacing: 2.5px; text-transform: uppercase;
   margin-bottom: 20px;
+  animation: riseIn .7s var(--spring) .1s both;
   justify-content: center;
 }
 .hero-eyebrow::before, .hero-eyebrow::after {
@@ -372,7 +400,8 @@ nav {
   font-size: clamp(72px, 11vw, 144px);
   font-weight: 400;
   line-height: .92;
-  letter-spacing: 3px; color: #f0ece6;
+  letter-spacing: 3px; color: var(--c-text);
+  animation: riseIn .85s var(--spring) .2s both;
 }
 .hero-h1 em { font-style: normal; color: var(--c-gold); }
 
@@ -380,16 +409,37 @@ nav {
   margin-top: 28px;
   font-family: var(--font-mono); font-size: 12px;
   color: rgba(240,236,230,.6); line-height: 1.8; max-width: 340px;
+  animation: riseIn .85s var(--spring) .35s both;
   margin-left: auto; margin-right: auto;
 }
 
+.hero-bg-text {
+  position: absolute; right: 40px; bottom: -30px;
+  font-family: var(--font-disp); font-size: clamp(160px,24vw,310px);
+  font-weight: 400; color: transparent;
+  -webkit-text-stroke: 1px rgba(201,169,110,.055);
+  line-height: 1; pointer-events: none; user-select: none;
+  letter-spacing: 4px;
+  animation: fadeIn .9s ease .5s both;
+}
+
+/* Parallax grid lines */
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(201,169,110,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,169,110,.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.6) 40%, transparent 100%);
+  animation: fadeIn 1.2s ease .6s both;
+}
 
 @keyframes riseIn { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
 /* ── STATS BAR ── */
 .stats-bar {
-  display: grid; grid-template-columns: 1.3fr 1fr 0.95fr 0.85fr;
+  display: grid; grid-template-columns: repeat(4,1fr);
   border-top: 1px solid var(--c-border);
   border-bottom: 1px solid var(--c-border);
   position: relative; z-index: 1;
@@ -424,7 +474,7 @@ nav {
 
 /* ── SECTION ── */
 .section {
-  padding: 80px 72px 60px;
+  padding: 72px;
   border-top: 1px solid var(--c-border);
   position: relative;
 }
@@ -490,10 +540,8 @@ nav {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1px; background: var(--c-bg);
-  border-radius: 12px;
+  border-radius: 12px; overflow: hidden;
 }
-.player-grid > .player-card:first-child { border-top-left-radius: 12px; }
-.player-grid > .player-card:last-child  { border-bottom-right-radius: 12px; }
 
 .player-card {
   background: var(--c-surf);
@@ -530,8 +578,6 @@ nav {
   margin-bottom: 14px; position: relative; z-index: 1;
 }
 .team-pill.A { border-color: rgba(201,169,110,.35); color: var(--c-gold); background: rgba(201,169,110,.05); }
-.team-pill.B { border-color: rgba(168,169,173,.35); color: #a8a9ad; background: rgba(168,169,173,.05); }
-.team-pill.C { border-color: rgba(139,98,52,.35); color: #8b6234; background: rgba(139,98,52,.05); }
 
 .player-avatar {
   width: 56px; height: 56px; border-radius: 50%;
@@ -581,8 +627,6 @@ nav {
   border: 1px solid var(--c-border); color: var(--c-muted); margin-bottom: 12px;
 }
 .pm-team-pill.A { border-color: rgba(201,169,110,.35); color: var(--c-gold); background: rgba(201,169,110,.05); }
-.pm-team-pill.B { border-color: rgba(168,169,173,.35); color: #a8a9ad; background: rgba(168,169,173,.05); }
-.pm-team-pill.C { border-color: rgba(139,98,52,.35); color: #8b6234; background: rgba(139,98,52,.05); }
 .pm-name { font-family: var(--font-disp); font-size: 42px; letter-spacing: 1px; line-height: 1; }
 .pm-role { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c-gold); margin-top: 8px; }
 .pm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
@@ -609,9 +653,7 @@ nav {
 .lb-head-lbl {
   font-family: var(--font-mono); font-size: 8.5px;
   letter-spacing: 2px; text-transform: uppercase; color: var(--c-muted2);
-  text-align: center;
 }
-.lb-head-lbl:nth-child(2) { text-align: left; }
 
 .lb-row {
   display: grid; grid-template-columns: 52px 1fr 40px 40px;
@@ -626,7 +668,7 @@ nav {
 
 .lb-rank {
   font-family: var(--font-disp); font-size: 22px; color: var(--c-muted2);
-  letter-spacing: 1px; text-align: center;
+  letter-spacing: 1px;
 }
 .lb-rank.gold { color: var(--c-gold); }
 
@@ -637,7 +679,7 @@ nav {
   background: var(--c-gold-glow); color: var(--c-gold);
   border: 1px solid rgba(201,169,110,.2);
 }
-.lb-stat { font-family: var(--font-mono); font-size: 12px; color: var(--c-muted); text-align: center; }
+.lb-stat { font-family: var(--font-mono); font-size: 12px; color: var(--c-muted); text-align: right; }
 
 /* ── PAGE HERO (inner pages) ── */
 .page-hero {
@@ -685,7 +727,7 @@ nav {
   padding: 5px 8px; background: var(--c-surf2);
   border: 1px solid var(--c-border); border-radius: 6px;
   color: var(--c-text); font-size: 12.5px; width: 100%; outline: none;
-  transition: border-color .15s; cursor: text;
+  transition: border-color .15s; cursor: none;
 }
 .er-input:focus { border-color: rgba(201,169,110,.4); }
 .arr-btn {
@@ -696,8 +738,11 @@ nav {
 .arr-btn:hover { color: var(--c-gold); background: var(--c-surf2); }
 .arr-btn svg { width: 13px; height: 13px; }
 
-/* ── SCROLL REVEAL (animations removed) ── */
-.reveal { opacity: 1; }
+/* ── SCROLL REVEAL ── */
+.reveal { opacity: 0; transform: translateY(20px); }
+.reveal.in { animation: riseIn .65s var(--spring) both; }
+.reveal.in-2 { animation: riseIn .65s var(--spring) .1s both; }
+.reveal.in-3 { animation: riseIn .65s var(--spring) .2s both; }
 
 /* ── FOOTER ── */
 .footer {
@@ -710,165 +755,51 @@ nav {
 .footer-right { font-family: var(--font-mono); font-size: 9.5px; color: var(--c-muted); text-align: right; line-height: 2; }
 
 /* ── RESPONSIVE ── */
-/* ── HOME PANELS ── */
-.home-panels {
-  display: grid; grid-template-columns: 1.4fr 1.3fr 0.8fr;
-  border-bottom: 1px solid var(--c-border);
-}
-.home-panel {
-  border-right: 1px solid var(--c-border);
-  display: flex; flex-direction: column;
-  height: 480px;
-}
-.home-panel:last-child { border-right: none; }
-.home-panel-head {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 24px; border-bottom: 1px solid var(--c-border);
-  flex-shrink: 0; background: var(--c-surf); min-height: 52px;
-}
-.home-panel-title {
-  font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: 2.5px; text-transform: uppercase; color: var(--c-muted);
-}
-.home-panel-body { flex: 1; overflow-y: auto; }
-.home-panel-body::-webkit-scrollbar { width: 3px; }
-.home-panel-body::-webkit-scrollbar-track { background: transparent; }
-.home-panel-body::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 2px; }
-.home-panel-item {
-  padding: 12px 24px; border-bottom: 1px solid var(--c-border);
-  cursor: pointer; transition: background .15s;
-}
-.home-panel-item:last-child { border-bottom: none; }
-.home-panel-item:hover { background: var(--c-surf2); }
-.home-panel-item-sjsu { border-left: 2px solid var(--c-gold); padding-left: 22px; background: rgba(201,169,110,.03); }
-
-.view-all-sm {
-  font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--c-muted);
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; gap: 4px;
-  transition: color .18s; padding: 0;
-}
-.view-all-sm:hover { color: var(--c-gold); }
-.view-all-sm .ic { width: 12px; height: 12px; }
-
-/* ── HOME INFO CARDS ── */
-.home-info-grid { display: grid; grid-template-columns: 1.5fr 0.9fr 1fr; gap: 12px; }
-.home-info-card {
-  background: var(--c-surf); border: 1px solid var(--c-border);
-  border-radius: 12px; padding: 24px 28px;
-  transition: border-color .2s;
-}
-.home-info-card:hover { border-color: rgba(201,169,110,.3); }
-.home-info-label {
-  font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: 2px; text-transform: uppercase; color: var(--c-muted); margin-bottom: 8px;
-}
-.home-info-val {
-  font-family: var(--font-disp); font-size: 32px;
-  color: var(--c-gold); line-height: 1; letter-spacing: 1px; margin-bottom: 6px;
-}
-.home-info-sub { font-size: 11.5px; color: var(--c-muted); line-height: 1.7; }
-
-/* ── TOURNAMENT CARDS ── */
-.tourn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; }
-.tourn-card {
-  background: var(--c-surf); border: 1px solid var(--c-border);
-  border-radius: 12px; padding: 28px; position: relative; overflow: hidden;
-  transition: border-color .2s, transform .2s var(--spring);
-}
-.tourn-card:hover { border-color: rgba(201,169,110,.3); transform: translateY(-2px); }
-.tourn-num {
-  font-family: var(--font-disp); font-size: 72px;
-  color: rgba(201,169,110,.05); position: absolute;
-  right: 12px; top: 4px; line-height: 1; pointer-events: none;
-}
-.tourn-name { font-size: 15px; font-weight: 600; margin-bottom: 8px; position: relative; z-index: 1; }
-.tourn-date {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--c-gold); letter-spacing: 1px; margin-bottom: 12px; position: relative; z-index: 1;
-}
-.tourn-teams { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; position: relative; z-index: 1; }
-.tourn-note {
-  font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: .5px; color: var(--c-muted); position: relative; z-index: 1;
-}
-
-/* ── ACTIVITY CARDS ── */
-.act-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; }
-.act-card {
-  background: var(--c-surf); border: 1px solid var(--c-border);
-  border-radius: 12px; padding: 28px; transition: border-color .2s;
-}
-.act-card:hover { border-color: rgba(201,169,110,.3); }
-.act-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-.act-desc { font-size: 12px; color: var(--c-muted); margin-bottom: 16px; font-family: var(--font-mono); letter-spacing: .3px; line-height: 1.6; }
-.act-date-opt { font-size: 12.5px; padding: 7px 0; border-bottom: 1px solid var(--c-border); display: flex; gap: 10px; align-items: center; }
-.act-date-opt:last-child { border-bottom: none; }
-.act-date-opt-lbl { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-muted); flex-shrink: 0; }
-
-/* ── RULES GRID ── */
-.rules-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
-  gap: 1px; background: var(--c-bg); border-radius: 12px; overflow: hidden;
-}
-.rule-item {
-  background: var(--c-surf); padding: 20px 24px;
-  display: flex; align-items: flex-start; gap: 16px; transition: background .2s;
-}
-.rule-item:hover { background: var(--c-surf2); }
-.rule-num { font-family: var(--font-disp); font-size: 32px; color: rgba(201,169,110,.2); flex-shrink: 0; line-height: 1.1; }
-.rule-text { font-size: 13px; color: var(--c-muted); line-height: 1.65; padding-top: 6px; }
-
-/* ── FOOTER LINKS ── */
-.footer-links { display: flex; flex-direction: column; gap: 6px; }
-.footer-link {
-  background: none; border: none; cursor: pointer;
-  font-family: var(--font-mono); font-size: 9.5px;
-  color: var(--c-muted); letter-spacing: .5px; text-align: left; padding: 0;
-  transition: color .15s; text-decoration: underline; text-underline-offset: 3px;
-}
-.footer-link:hover { color: var(--c-gold); }
-
-/* ── SOP PAGE ── */
-.sop-content { max-width: 760px; margin: 0 auto; padding: 0 72px 72px; }
-.sop-section { margin-bottom: 52px; }
-.sop-h2 {
-  font-family: var(--font-disp); font-size: 38px; letter-spacing: 1px;
-  margin-bottom: 20px; color: var(--c-gold);
-}
-.sop-h3 {
-  font-family: var(--font-disp); font-size: 22px; letter-spacing: 1px;
-  margin-bottom: 10px; margin-top: 28px; color: var(--c-text);
-}
-.sop-body { font-size: 13.5px; line-height: 1.85; color: rgba(240,236,230,.7); }
-.sop-body p { margin-bottom: 14px; }
-.sop-quote {
-  font-style: italic; border-left: 2px solid var(--c-gold); padding-left: 18px;
-  color: var(--c-muted); margin-bottom: 24px; line-height: 1.8;
-}
-.sop-list { list-style: none; padding: 0; margin-top: 8px; }
-.sop-list li {
-  padding: 9px 0; border-bottom: 1px solid var(--c-border);
-  font-size: 13px; color: rgba(240,236,230,.7); line-height: 1.65;
-}
-.sop-list li:last-child { border-bottom: none; }
-
-/* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .hero, .section, .page-hero, .footer { padding-left: 24px; padding-right: 24px; }
+  .hero-bg-text, .hero-grid { display: none; }
   .stats-bar { grid-template-columns: 1fr 1fr; }
   .stat-cell { padding: 24px 28px; }
   .fg-2 { grid-template-columns: 1fr; }
   .match-row { grid-template-columns: 56px 1fr 40px; }
   .match-score { display: none; }
-  .home-panels { grid-template-columns: 1fr; }
-  .home-panel { border-right: none; border-bottom: 1px solid var(--c-border); height: 320px; }
-  .home-panel:last-child { border-bottom: none; }
-  .home-info-grid, .tourn-grid, .act-grid { grid-template-columns: 1fr; }
-  .sop-content { padding: 0 24px 48px; }
+  .amb { display: none; }
 }
 `;
+
+// ─── CURSOR ──────────────────────────────────────────────────────────────────
+function Cursor() {
+  const el = useRef(null);
+  const pos = useRef({ x: 0, y: 0 });
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const move = e => { pos.current = { x: e.clientX, y: e.clientY }; };
+    const tick = () => {
+      if (el.current) {
+        el.current.style.left = pos.current.x + 'px';
+        el.current.style.top  = pos.current.y + 'px';
+      }
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    window.addEventListener('mousemove', move);
+
+    const expand = e => { if (e.target.closest('button,a,input,select,[data-hover]') && el.current) el.current.classList.add('large'); };
+    const shrink = () => { if (el.current) el.current.classList.remove('large'); };
+    window.addEventListener('mouseover', expand);
+    window.addEventListener('mouseout', shrink);
+
+    return () => {
+      cancelAnimationFrame(raf.current);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseover', expand);
+      window.removeEventListener('mouseout', shrink);
+    };
+  }, []);
+
+  return <div id="csr" ref={el} />;
+}
 
 // ─── SCROLL REVEAL ────────────────────────────────────────────────────────────
 function useReveal() {
@@ -877,14 +808,8 @@ function useReveal() {
     const io = new IntersectionObserver(entries => {
       entries.forEach((e, i) => {
         if (e.isIntersecting) {
-          const cls = `in${i % 3 === 1 ? '-2' : i % 3 === 2 ? '-3' : ''}`;
-          e.target.classList.add(cls);
+          e.target.classList.add(`in${i % 3 === 1 ? '-2' : i % 3 === 2 ? '-3' : ''}`);
           io.unobserve(e.target);
-          e.target.addEventListener('animationend', () => {
-            e.target.classList.remove('reveal', cls);
-            e.target.style.opacity = '1';
-            e.target.style.transform = '';
-          }, { once: true });
         }
       });
     }, { threshold: 0.1 });
@@ -927,112 +852,6 @@ function NavMenu({ label, icon, items }) {
   );
 }
 
-// ─── LOGIN MODAL ──────────────────────────────────────────────────────────────
-function LoginModal({ onClose, onLogin }) {
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [err,      setErr]      = useState('');
-
-  const submit = () => {
-    const result = loginUser({ email, password });
-    if (result.error) { setErr(result.error); return; }
-    onLogin(result.session);
-    onClose();
-  };
-
-  return (
-    <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
-        <div className="modal-title">Welcome Back</div>
-        <div className="modal-sub">Sign in to access your team's private section</div>
-        <div className="fg">
-          <label className="flabel">Email</label>
-          <input className="finput" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} placeholder="your@email.com" />
-        </div>
-        <div className="fg">
-          <label className="flabel">Password</label>
-          <input className="finput" type="password" value={password} onChange={e => { setPassword(e.target.value); setErr(''); }} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && submit()} />
-        </div>
-        {err && <div className="ferr">{err}</div>}
-        <button className="btn-primary" onClick={submit} disabled={!email || !password}>Sign In</button>
-      </div>
-    </div>
-  );
-}
-
-// ─── REGISTER MODAL ───────────────────────────────────────────────────────────
-function RegisterModal({ onClose, onLogin }) {
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState('');
-  const [f, setF] = useState({ firstName: '', lastName: '', email: '', password: '', code: '' });
-  const [err, setErr] = useState('');
-
-  const upd = (key, val) => { setF(x => ({ ...x, [key]: val })); setErr(''); };
-
-  const submit = () => {
-    const result = registerUser({ ...f });
-    if (result.error) { setErr(result.error); return; }
-    onLogin(result.session);
-    onClose();
-  };
-
-  return (
-    <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
-        <div className="modal-title">Join SJSU</div>
-        <div className="modal-sub">
-          {step === 1 ? 'Select your role on the team' : `${role === 'officer' ? 'Officer' : 'Player'} Registration`}
-        </div>
-
-        {step === 1 ? (
-          <div className="role-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            <div className="role-card" onClick={() => { setRole('officer'); setStep(2); }}>
-              <div className="icon-wrap">{Icons.star}</div>
-              <div className="role-lbl">Officer</div>
-            </div>
-            <div className="role-card" onClick={() => { setRole('player'); setStep(2); }}>
-              <div className="icon-wrap">{Icons.racket}</div>
-              <div className="role-lbl">Player</div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="fg-2">
-              <div className="fg">
-                <label className="flabel">First Name</label>
-                <input className="finput" value={f.firstName} onChange={e => upd('firstName', e.target.value)} placeholder="First" />
-              </div>
-              <div className="fg">
-                <label className="flabel">Last Name</label>
-                <input className="finput" value={f.lastName} onChange={e => upd('lastName', e.target.value)} placeholder="Last" />
-              </div>
-            </div>
-            <div className="fg">
-              <label className="flabel">Email</label>
-              <input className="finput" type="email" value={f.email} onChange={e => upd('email', e.target.value)} placeholder="your@email.com" />
-            </div>
-            <div className="fg">
-              <label className="flabel">Password</label>
-              <input className="finput" type="password" value={f.password} onChange={e => upd('password', e.target.value)} placeholder="••••••••" />
-            </div>
-            <div className="fg">
-              <label className="flabel">{role === 'officer' ? 'Officer' : 'Player'} Code</label>
-              <input className="finput" value={f.code} onChange={e => upd('code', e.target.value)} placeholder="Enter your join code" />
-            </div>
-            {err && <div className="ferr">{err}</div>}
-            <button className="btn-primary" onClick={submit} disabled={!f.firstName || !f.lastName || !f.email || !f.password || !f.code}>
-              Create Account
-            </button>
-            <button className="btn-ghost" onClick={() => { setStep(1); setErr(''); }}>← Back</button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 function Nav({ user, setModal, setPage, onLogout }) {
   const [accOpen, setAccOpen] = useState(false);
@@ -1049,12 +868,14 @@ function Nav({ user, setModal, setPage, onLogout }) {
     : null;
 
   const viewItems = [
-    { icon: Icons.clock, label: 'Schedule', action: () => setPage('schedule') },
+    { icon: Icons.clock, label: 'Match History', action: () => setPage('history') },
     { icon: Icons.list,  label: 'Roster',        action: () => setPage('roster') },
     { icon: Icons.bar,   label: 'Standings',     action: () => setPage('leaderboard') },
   ];
 
   const accItems = [
+    { icon: Icons.settings, label: 'Settings', action: () => {} },
+    { sep: true },
     { icon: Icons.logout, label: 'Log Out', action: onLogout },
   ];
 
@@ -1089,6 +910,113 @@ function Nav({ user, setModal, setPage, onLogout }) {
         )}
       </div>
     </nav>
+  );
+}
+
+// ─── REGISTER MODAL ───────────────────────────────────────────────────────────
+function RegisterModal({ onClose, onSuccess }) {
+  const [step, setStep] = useState('role');
+  const [role, setRole] = useState(null);
+  const [f, setF] = useState({ firstName: '', lastName: '', email: '', password: '', code: '' });
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    setErr('');
+    if (!f.firstName || !f.lastName || !f.email || !f.password) { setErr('All fields are required.'); return; }
+    if (role === 'officer' && f.code !== OFFICER_CODE) { setErr('Invalid officer code.'); return; }
+    if (role === 'player'  && f.code !== PLAYER_CODE)  { setErr('Invalid player code.');  return; }
+    onSuccess({ ...f, role });
+  };
+
+  const roles = [
+    { id: 'officer', icon: Icons.star,   label: 'Officer' },
+    { id: 'player',  icon: Icons.racket, label: 'Player'  },
+    { id: 'viewer',  icon: Icons.eye,    label: 'Viewer'  },
+  ];
+
+  return (
+    <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
+        <div className="modal-title">Register</div>
+        <div className="modal-sub">{step === 'role' ? 'Choose your access level' : `Creating ${role} account`}</div>
+
+        {step === 'role' ? (
+          <>
+            <div className="role-grid">
+              {roles.map(r => (
+                <button key={r.id} className={`role-card${role === r.id ? ' sel' : ''}`} onClick={() => setRole(r.id)}>
+                  <div className="icon-wrap">{r.icon}</div>
+                  <div className="role-lbl">{r.label}</div>
+                </button>
+              ))}
+            </div>
+            <button className="btn-primary" onClick={() => role && setStep('info')} disabled={!role}>Continue</button>
+          </>
+        ) : (
+          <>
+            <div className="fg-2">
+              <div className="fg">
+                <label className="flabel">First Name</label>
+                <input className="finput" value={f.firstName} onChange={e => setF(x => ({ ...x, firstName: e.target.value }))} placeholder="First" />
+              </div>
+              <div className="fg">
+                <label className="flabel">Last Name</label>
+                <input className="finput" value={f.lastName} onChange={e => setF(x => ({ ...x, lastName: e.target.value }))} placeholder="Last" />
+              </div>
+            </div>
+            <div className="fg">
+              <label className="flabel">Email</label>
+              <input className="finput" type="email" value={f.email} onChange={e => setF(x => ({ ...x, email: e.target.value }))} placeholder="you@sjsu.edu" />
+            </div>
+            <div className="fg">
+              <label className="flabel">Password</label>
+              <input className="finput" type="password" value={f.password} onChange={e => setF(x => ({ ...x, password: e.target.value }))} placeholder="••••••••" />
+            </div>
+            {(role === 'officer' || role === 'player') && (
+              <div className="fg">
+                <label className="flabel">{role === 'officer' ? 'Officer' : 'Player'} Access Code</label>
+                <input className="finput" value={f.code} onChange={e => setF(x => ({ ...x, code: e.target.value }))} placeholder="Enter code" />
+              </div>
+            )}
+            {err && <div className="ferr">{err}</div>}
+            <button className="btn-primary" onClick={submit}>Create Account</button>
+            <button className="btn-ghost" onClick={() => setStep('role')}>Back</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── LOGIN MODAL ──────────────────────────────────────────────────────────────
+function LoginModal({ onClose, onSuccess, users }) {
+  const [f, setF] = useState({ email: '', password: '' });
+  const [err, setErr] = useState('');
+  const submit = () => {
+    if (!f.email || !f.password) { setErr('All fields required.'); return; }
+    const registered = users.find(u => u.email === f.email);
+    if (!registered) { setErr('No account found with that email.'); return; }
+    onSuccess({ ...registered });
+  };
+  return (
+    <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
+        <div className="modal-title">Log In</div>
+        <div className="modal-sub">Welcome back to SJSU Tennis</div>
+        <div className="fg">
+          <label className="flabel">Email</label>
+          <input className="finput" type="email" value={f.email} onChange={e => setF(x => ({ ...x, email: e.target.value }))} placeholder="you@sjsu.edu" />
+        </div>
+        <div className="fg">
+          <label className="flabel">Password</label>
+          <input className="finput" type="password" value={f.password} onChange={e => setF(x => ({ ...x, password: e.target.value }))} placeholder="••••••••" />
+        </div>
+        {err && <div className="ferr">{err}</div>}
+        <button className="btn-primary" onClick={submit}>Log In</button>
+      </div>
+    </div>
   );
 }
 
@@ -1248,7 +1176,7 @@ function PlayerCard({ p, pos, onSelect }) {
           ? <img src={p.photo} alt={p.name} />
           : <span className="player-avatar-placeholder">{p.name.charAt(0)}</span>}
       </div>
-      <div className={`team-pill${p.team === 'A' ? ' A' : p.team === 'B' ? ' B' : p.team === 'C' ? ' C' : ''}`}>{p.team} Team</div>
+      <div className={`team-pill${p.team === 'A' ? ' A' : ''}`}>{p.team} Team</div>
       <div className="player-name">{p.name}</div>
       {p.role && <div className="player-meta" style={{ color: 'var(--c-gold)', marginTop: 2 }}>{p.role}</div>}
       {p.utr > 0 && <>
@@ -1270,7 +1198,7 @@ function PlayerModal({ p, onClose }) {
     <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
-        <div className={`pm-team-pill${p.team === 'A' ? ' A' : p.team === 'B' ? ' B' : p.team === 'C' ? ' C' : ''}`}>{p.team} Team</div>
+        <div className={`pm-team-pill${p.team === 'A' ? ' A' : ''}`}>{p.team} Team</div>
         <div className="pm-name">{p.name}</div>
         {p.role && <div className="pm-role">{p.role}</div>}
         <div className="pm-stats">
@@ -1313,243 +1241,60 @@ function PlayerModal({ p, onClose }) {
 }
 
 // ─── HOME PAGE ────────────────────────────────────────────────────────────────
-function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings }) {
+function HomePage({ matches, roster, setPage, onSelectPlayer }) {
   useReveal();
+  const wins   = matches.filter(m => m.result === 'W').length;
+  const losses = matches.filter(m => m.result === 'L').length;
+  const recent = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+  const topFour = roster.slice(0, 4);
+
+  const fmt = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
     <div>
       {/* HERO */}
       <div className="hero">
-        {/* Decorative tennis icons */}
-        <span aria-hidden="true" style={{ position:'absolute', right:'9%', top:'16%', width:100, height:100, opacity:.055, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(22deg)', display:'block' }}>{Icons.tennisRacket}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:'5%', bottom:'20%', width:52, height:52, opacity:.065, color:'var(--c-gold)', pointerEvents:'none', display:'block' }}>{Icons.tennisBall}</span>
-        <span aria-hidden="true" style={{ position:'absolute', right:'22%', bottom:'14%', width:80, height:80, opacity:.04, color:'#f0ece6', pointerEvents:'none', transform:'rotate(-8deg)', display:'block' }}>{Icons.miniCourt}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:'14%', top:'12%', width:64, height:64, opacity:.04, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(10deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
+        <div className="hero-grid" />
+        <div className="hero-bg-text">TOC</div>
         <div className="hero-eyebrow">NorCal TOC · 2025–26 Season</div>
-        <h1 className="hero-h1">hi</h1>
-        <p className="hero-sub">The Official Site for San José State's Club Tennis Team</p>
+        <h1 className="hero-h1">SJSU <em>CLUB</em><br />TENNIS</h1>
+        <p className="hero-sub">
+          The Official Site for San José State's Club Tennis Team<br />
+          <br />
+        </p>
       </div>
 
-      {/* THREE PANELS */}
-      <div className="home-panels">
-        {/* SCHEDULE */}
-        <div className="home-panel">
-          <div className="home-panel-head" style={{ height: 52 }}>
-            <span className="home-panel-title">Schedule</span>
-            <button className="view-all-sm" onClick={() => setPage('schedule')}>
-              View all <span className="ic">{Icons.arrowRight}</span>
-            </button>
+      {/* STATS */}
+      <div className="stats-bar">
+        {[
+          { n: wins,            l: 'Season Wins' },
+          { n: losses,          l: 'Season Losses' },
+          { n: matches.length,  l: 'Matches Played' },
+          { n: roster.length,   l: 'Roster Players' },
+        ].map((s, i) => (
+          <div key={i} className="stat-cell reveal">
+            <div className="stat-num">{s.n}</div>
+            <div className="stat-lbl">{s.l}</div>
           </div>
-          <div className="home-panel-body">
-            {TOURNAMENTS.map((t, i) => (
-              <div key={i} className="home-panel-item">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--c-muted)', marginTop: 2, letterSpacing: '.5px' }}>{t.date} · Teams: {t.teams.join(', ')}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ROSTER */}
-        <div className="home-panel" style={{ background: '#0c1008' }}>
-          <div className="home-panel-head" style={{ height: 52, background: '#121812' }}>
-            <span className="home-panel-title">Roster</span>
-            <button className="view-all-sm" onClick={() => setPage('roster')}>
-              View all <span className="ic">{Icons.arrowRight}</span>
-            </button>
-          </div>
-          <div className="home-panel-body">
-            {roster.map(p => (
-              <div key={p.id} className="home-panel-item" onClick={() => onSelectPlayer(p)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--c-surf2)', border: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                    {p.photo
-                      ? <img src={p.photo} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontFamily: 'var(--font-disp)', fontSize: 14, color: 'var(--c-muted)' }}>{p.name.charAt(0)}</span>}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--c-muted)', marginTop: 1, letterSpacing: '.3px' }}>{p.team} · {p.gender === 'M' ? 'Gentlemen' : 'Ladies'}</div>
-                  </div>
-                  {p.role && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--c-gold)', letterSpacing: '.5px', flexShrink: 0 }}>{p.role}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* STANDINGS */}
-        <div className="home-panel" style={{ background: '#0c1008' }}>
-          <div className="home-panel-head" style={{ height: 52, background: '#121812' }}>
-            <span className="home-panel-title">Standings</span>
-            <button className="view-all-sm" onClick={() => setPage('leaderboard')}>
-              View all <span className="ic">{Icons.arrowRight}</span>
-            </button>
-          </div>
-          <div className="home-panel-body">
-            {(divisionStandings || []).map((s, i) => (
-              <div key={s.name} className="home-panel-item" onClick={() => setPage('leaderboard')}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ fontFamily: 'var(--font-disp)', fontSize: 22, color: i < 3 ? 'var(--c-gold)' : 'var(--c-muted2)', width: 30, flexShrink: 0 }}>{i + 1}</div>
-                  <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{s.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--c-muted)', flexShrink: 0 }}>{s.wins}–{s.losses}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* TEAM SPOT — only visible to SJSU members */}
-      {isMember && <>
-        <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 18, letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--c-gold)', fontWeight: 'bold', padding: '56px var(--page-px) 0' }}>The Personal Stuff</div>
-        <div className="section">
-          <span aria-hidden="true" style={{ position:'absolute', right:32, top:28, width:18, height:18, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(30deg)', display:'block' }}>{Icons.tennisBall}</span>
-          <div className="section-tag">Schedule & Info</div>
-          <div className="home-info-grid">
-            <div className="home-info-card reveal">
-              <div className="home-info-label">Practices</div>
-              <div className="home-info-val">Mon & Wed</div>
-              <div className="home-info-sub">6:00 – 8:00 PM · Campus Courts<br />Thursdays: optional drop-in</div>
-            </div>
-            <div className="home-info-card reveal">
-              <div className="home-info-label">Dues Deadline</div>
-              <div className="home-info-val">Mar 23</div>
-              <div className="home-info-sub">Returning members: $255<br />New members: $305</div>
-            </div>
-            <div className="home-info-card reveal">
-              <div className="home-info-label">Contact</div>
-              <div className="home-info-val" style={{ fontSize: 22 }}>Abraham Lau</div>
-              <div className="home-info-sub">tennis@sjsustudents.com<br />(408) 480-6255</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="section">
-          <span aria-hidden="true" style={{ position:'absolute', left:40, bottom:36, width:20, height:20, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-12deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
-          <div className="section-tag">Team Life</div>
-          <div className="section-header">
-            <h2 className="section-h2">Team<br />Activities</h2>
-          </div>
-          <div className="act-grid">
-            {ACTIVITIES.map((a, i) => (
-              <div key={i} className="act-card reveal">
-                <div className="act-name">{a.name}</div>
-                <div className="act-desc">{a.desc}</div>
-                {a.dates.map((d, j) => (
-                  <div key={j} className="act-date-opt">
-                    <span className="act-date-opt-lbl">Option {j + 1}</span>
-                    {d}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </>}
-
-      {isMember && <div className="section">
-        <span aria-hidden="true" style={{ position:'absolute', right:44, top:32, width:21, height:21, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(8deg)', display:'block' }}>{Icons.tennisNet}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:56, bottom:44, width:18, height:18, opacity:.07, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-25deg)', display:'block' }}>{Icons.tennisRacket}</span>
-        <div className="section-tag">Ladder System</div>
-        <div className="section-header">
-          <h2 className="section-h2">Challenge<br />Match Rules</h2>
-        </div>
-        <div className="rules-grid">
-          {[
-            "Challenge up to 2 spots above your current position — work your way up the ladder.",
-            "Singles set to 6, played at Monday Practices. Doubles are currently on hold.",
-            "Maximum of 3 challenge matches per week.",
-            "If you challenge or are challenged, you may not challenge again that same week.",
-            "If the challenger wins, the two players swap ladder positions.",
-            "If the challenged player is a no-show for all possible match days, the challenger automatically takes their spot.",
-          ].map((rule, i) => (
-            <div key={i} className="rule-item reveal">
-              <div className="rule-num">{String(i + 1).padStart(2, '0')}</div>
-              <div className="rule-text">{rule}</div>
-            </div>
-          ))}
-        </div>
-      </div>}
-
-      <footer className="footer">
-        <div className="footer-logo">SJSU <span>Tennis</span></div>
-        {isMember && (
-          <div className="footer-links">
-            <button className="footer-link" onClick={() => setPage('sop')}>Standard Operating Procedures</button>
-          </div>
-        )}
-        <div className="footer-right">
-          USTA Tennis on Campus · NorCal Section<br />
-          tennis@sjsustudents.com
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-// ─── SCHEDULE PAGE ────────────────────────────────────────────────────────────
-function SchedulePage({ matches }) {
-  useReveal();
-  const sorted = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const wins   = matches.filter(m => m.result === 'W').length;
-  const losses = matches.filter(m => m.result === 'L').length;
-  const fmt = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
-
-  return (
-    <div className="page">
-      <div className="page-hero" data-word="SCHEDULE">
-        <span aria-hidden="true" style={{ position:'absolute', right:'7%', bottom:'18%', width:20, height:20, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(14deg)', display:'block' }}>{Icons.miniCourt}</span>
-        <div className="page-eyebrow">2025–26 Season</div>
-        <h1 className="page-h1">Schedule</h1>
-        <div className="page-meta">
-          <div>
-            <div className="page-stat-num">{TOURNAMENTS.length}</div>
-            <div className="page-stat-lbl">Tournaments</div>
-          </div>
-          <div>
-            <div className="page-stat-num" style={{ color: 'var(--c-win)' }}>{wins}</div>
-            <div className="page-stat-lbl">Wins</div>
-          </div>
-          <div>
-            <div className="page-stat-num" style={{ color: 'var(--c-loss)' }}>{losses}</div>
-            <div className="page-stat-lbl">Losses</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="section" style={{ borderTop: 'none' }}>
-        <span aria-hidden="true" style={{ position:'absolute', right:36, bottom:40, width:20, height:20, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(18deg)', display:'block' }}>{Icons.miniCourt}</span>
-        <div className="section-tag">Upcoming Matches</div>
-        <div className="tourn-grid">
-          {TOURNAMENTS.map((t, i) => (
-            <div key={i} className="tourn-card reveal">
-              <div className="tourn-num">{String(i + 1).padStart(2, '0')}</div>
-              <div className="tourn-name">{t.name}</div>
-              <div className="tourn-date">{t.date}</div>
-              <div className="tourn-teams">
-                {t.teams.map(tm => (
-                  <span key={tm} style={{ display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '1.5px', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 20, border: `1px solid ${tm === 'A' ? 'rgba(201,169,110,.35)' : 'var(--c-border)'}`, color: tm === 'A' ? 'var(--c-gold)' : 'var(--c-muted)', background: tm === 'A' ? 'rgba(201,169,110,.05)' : 'none', marginRight: 4 }}>
-                    {tm} Team
-                  </span>
-                ))}
-              </div>
-              <div className="tourn-note">{t.notes}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      {/* RECENT MATCHES */}
       <div className="section">
-        <div className="section-tag">Match History</div>
-        <div className="match-list">
-          {sorted.length === 0
-            ? <div style={{ padding: '32px 24px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--c-muted)', textAlign: 'center', letterSpacing: '1px' }}>Season hasn't started yet</div>
-            : sorted.map(m => (
+        <div className="section-tag">Results</div>
+        <div className="section-header">
+          <h2 className="section-h2">Recent<br />Matches</h2>
+          <button className="view-all" onClick={() => setPage('history')}>
+            View all <span className="ic">{Icons.arrowRight}</span>
+          </button>
+        </div>
+        {recent.length === 0 ? (
+          <div style={{ padding: '48px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--c-muted)', letterSpacing: '1px' }}>
+            Let's add some wins...
+          </div>
+        ) : (
+          <div className="match-list">
+            {recent.map(m => (
               <div key={m.id} className="match-row reveal">
                 <div className="match-date">{fmt(m.date)}</div>
                 <div>
@@ -1559,8 +1304,105 @@ function SchedulePage({ matches }) {
                 <div className="match-score">{m.score}</div>
                 <div className={`badge badge-${m.result}`}>{m.result}</div>
               </div>
-            ))
-          }
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ROSTER PREVIEW */}
+      <div className="section">
+        <div className="section-tag">Squad</div>
+        <div className="section-header">
+          <h2 className="section-h2">Roster</h2>
+          <button className="view-all" onClick={() => setPage('roster')}>
+            View all <span className="ic">{Icons.arrowRight}</span>
+          </button>
+        </div>
+        <div className="player-grid">
+          {topFour.map((p, i) => <PlayerCard key={p.id} p={p} pos={i + 1} onSelect={onSelectPlayer} />)}
+        </div>
+      </div>
+
+      {/* STANDINGS PREVIEW */}
+      <div className="section">
+        <div className="section-tag">NorCal TOC · 13 Schools</div>
+        <div className="section-header">
+          <h2 className="section-h2">Standings</h2>
+          <button className="view-all" onClick={() => setPage('leaderboard')}>
+            View all <span className="ic">{Icons.arrowRight}</span>
+          </button>
+        </div>
+        <div className="lb reveal">
+          <div className="lb-head">
+            <span className="lb-head-lbl">#</span>
+            <span className="lb-head-lbl">School</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>W</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>L</span>
+          </div>
+          {LEADERBOARD.slice(0, 5).map(s => (
+            <div key={s.rank} className={`lb-row${s.school === 'SJSU' ? ' sjsu' : ''}`}>
+              <div className={`lb-rank${s.rank <= 3 ? ' gold' : ''}`}>{s.rank}</div>
+              <div className="lb-school">
+                {s.school}
+              </div>
+              <div className="lb-stat">{s.wins}</div>
+              <div className="lb-stat">{s.losses}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <footer className="footer">
+        <div className="footer-logo">SJSU <span>Tennis</span></div>
+        <div className="footer-right">
+          USTA Tennis on Campus · NorCal Section<br />
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// ─── HISTORY PAGE ─────────────────────────────────────────────────────────────
+function HistoryPage({ matches }) {
+  useReveal();
+  const sorted = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const wins   = matches.filter(m => m.result === 'W').length;
+  const losses = matches.filter(m => m.result === 'L').length;
+  const fmt = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+
+  return (
+    <div className="page">
+      <div className="page-hero" data-word="HISTORY">
+        <div className="page-eyebrow">2025–26 Season</div>
+        <h1 className="page-h1">Match<br />History</h1>
+        <div className="page-meta">
+          <div>
+            <div className="page-stat-num" style={{ color: 'var(--c-win)' }}>{wins}</div>
+            <div className="page-stat-lbl">Wins</div>
+          </div>
+          <div>
+            <div className="page-stat-num" style={{ color: 'var(--c-loss)' }}>{losses}</div>
+            <div className="page-stat-lbl">Losses</div>
+          </div>
+          <div>
+            <div className="page-stat-num">{matches.length}</div>
+            <div className="page-stat-lbl">Played</div>
+          </div>
+        </div>
+      </div>
+      <div className="section" style={{ borderTop: 'none' }}>
+        <div className="match-list">
+          {sorted.map(m => (
+            <div key={m.id} className="match-row reveal">
+              <div className="match-date">{fmt(m.date)}</div>
+              <div>
+                <div className="match-vs">SJSU vs. {m.opponent}</div>
+                <div className="match-loc">{m.location}</div>
+              </div>
+              <div className="match-score">{m.score}</div>
+              <div className={`badge badge-${m.result}`}>{m.result}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1590,7 +1432,6 @@ function RosterPage({ roster, onSelectPlayer }) {
   return (
     <div className="page">
       <div className="page-hero" data-word="SQUAD">
-        <span aria-hidden="true" style={{ position:'absolute', right:'12%', top:'22%', width:22, height:22, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-20deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
         <div className="page-eyebrow">2025–26 · SJSU Club Tennis</div>
         <h1 className="page-h1">Roster</h1>
         <div className="page-meta">
@@ -1629,175 +1470,33 @@ function RosterPage({ roster, onSelectPlayer }) {
 }
 
 // ─── STANDINGS PAGE ────────────────────────────────────────────────────────────
-function LeaderboardPage({ divisionStandings }) {
-  useReveal();
-  const standings = divisionStandings || [];
-  return (
-    <div className="page">
-      <div className="page-hero" data-word="RANKS" style={{ textAlign: 'center' }}>
-        <span aria-hidden="true" style={{ position:'absolute', left:'8%', bottom:'20%', width:19, height:19, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', display:'block' }}>{Icons.tennisBall}</span>
-        <div className="page-eyebrow" style={{ textAlign: 'center' }}>NorCal USTA Tennis on Campus · 2025–26</div>
-        <h1 className="page-h1" style={{ textAlign: 'center' }}>Standings</h1>
-      </div>
-      <div className="section" style={{ borderTop: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div className="lb reveal" style={{ width: '100%', maxWidth: 700 }}>
-          <div className="lb-head" style={{ textAlign: 'center' }}>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>#</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>School</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>W</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>L</span>
-          </div>
-          {standings.length === 0
-            ? <div className="lb-row hl" style={{ textAlign: 'center' }}>
-                <div className="lb-rank gold" style={{ textAlign: 'center' }}>1</div>
-                <div className="lb-school" style={{ justifyContent: 'center' }}>San Jose State University</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>—</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>—</div>
-              </div>
-            : standings.map((s, i) => (
-              <div key={s.name} className="lb-row hl" style={{ textAlign: 'center' }}>
-                <div className={`lb-rank${i === 0 ? ' gold' : ''}`} style={{ textAlign: 'center' }}>{i + 1}</div>
-                <div className="lb-school" style={{ justifyContent: 'center' }}>{s.name}</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>{s.wins}</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>{s.losses}</div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── SOP PAGE ─────────────────────────────────────────────────────────────────
-function SOPPage() {
+function LeaderboardPage() {
   useReveal();
   return (
     <div className="page">
-      <div className="page-hero" data-word="SOP">
-        <span aria-hidden="true" style={{ position:'absolute', right:'6%', top:'28%', width:22, height:22, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(5deg)', display:'block' }}>{Icons.tennisNet}</span>
-        <div className="page-eyebrow">SJSU Club Tennis · As of March 2, 2026</div>
-        <h1 className="page-h1">Standard<br />Operating<br />Procedures</h1>
-        <div className="page-meta">
-          <div>
-            <div className="page-stat-lbl">Articulated by</div>
-            <div className="page-stat-num" style={{ fontSize: 32 }}>Abraham Lau</div>
-          </div>
-        </div>
+      <div className="page-hero" data-word="RANKS">
+        <div className="page-eyebrow">NorCal USTA Tennis on Campus · 2025–26</div>
+        <h1 className="page-h1">Standings</h1>
       </div>
-      <div className="sop-content">
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Foreword</div>
-          <div className="sop-body">
-            <p className="sop-quote">"The purpose of this organization shall be two-fold: one, to provide an opportunity for students at San José State University to enjoy and improve at the game of tennis; and two, to field a team to represent San José State University in games versus both other clubs and colleges." — Article II, Section 1</p>
-            <p>As your Team Captain and President, it is my pleasure to welcome you to another season of Club Tennis here at San Jose State University. SJSU was founded in 1856, making it the oldest California State University and its legacy is in our hands today.</p>
-            <p>Club Tennis was founded back in 2017 from a group of friends yearning for a special place to call home. Through the 15-plus semesters this organization has gone through, numerous brave souls stepped up to the plate, to lead one another to the finish line. That finish line is not merely the trophy but the treatment of each other with the respect and dignity that they deserve. If one of us falls down, we stop running and carry them on our shoulders. We are a team through and through, a team of Spartans ready for war.</p>
+      <div className="section" style={{ borderTop: 'none' }}>
+        <div className="lb reveal">
+          <div className="lb-head">
+            <span className="lb-head-lbl">#</span>
+            <span className="lb-head-lbl">School</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>W</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>L</span>
           </div>
-        </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Operations</div>
-          <div className="sop-h3">Practices</div>
-          <div className="sop-body">
-            <p>SJSU Club Tennis meets on <strong>Monday and Wednesday from 6–8 PM</strong>. Players must fill out the Attendance Tracker and notify the President by <strong>3 PM</strong> if they cannot attend. Thursdays are optional drop-in.</p>
-            <p><a href="https://tinyurl.com/yc2rm86v" target="_blank" rel="noreferrer" style={{ color: 'var(--c-gold)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Attendance Tracker → tinyurl.com/yc2rm86v</a></p>
-          </div>
-          <div className="sop-h3">Dues</div>
-          <div className="sop-body">
-            <ul className="sop-list">
-              <li>Payable by check to Treasurer Brandon Wirjadisastra by <strong>Monday, March 23rd</strong></li>
-              <li>Pay to the order of <strong>"Student Union Inc. of SJSU"</strong></li>
-              <li>Returning members: <strong>$255</strong> · New members: <strong>$305</strong></li>
-            </ul>
-          </div>
-          <div className="sop-h3">Officer Team</div>
-          <div className="sop-body">
-            <ul className="sop-list">
-              <li><strong>President:</strong> Abraham Lau · tennis@sjsustudents.com · (408) 480-6255</li>
-              <li><strong>Treasurer:</strong> Brandon Wirjadisastra · brandon.wirjadisastra@sjsu.edu · (510) 468-4244</li>
-              <li><strong>Marketing:</strong> Kayla Solano · kayla.solano@sjsu.edu · (415) 524-9833</li>
-              <li><strong>Safety:</strong> Kiana Lua · kiana.lua@sjsu.edu · (661) 808-4734</li>
-            </ul>
-          </div>
-          <div className="sop-h3">Telecommunication</div>
-          <div className="sop-body">
-            <p>Official Discord server for broad announcements. WhatsApp is used frequently — members must read and react to the "Announcements" chat and stay current in "General." Ensure tennis@sjsustudents.com is not in your spam folder.</p>
-          </div>
-        </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Player Conduct</div>
-          <div className="sop-body">
-            <p>The Officer Team may suspend or dismiss any member for the following:</p>
-            <ul className="sop-list">
-              <li>Unsportsmanlike Conduct — aggression, verbal abuse, or disrespect</li>
-              <li>Violation of Club Policies — attendance, team rules, officer directives</li>
-              <li>Academic or Ethical Misconduct</li>
-              <li>Substance Abuse during club activities</li>
-              <li>Harassment or Discrimination of any kind</li>
-              <li>Violent or Criminal Behavior</li>
-              <li>Reckless or Dangerous Behavior</li>
-              <li>Repeated Disregard of Warnings</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Competition</div>
-          <div className="sop-h3">Tournaments</div>
-          <div className="sop-body">
-            <ul className="sop-list">
-              {TOURNAMENTS.map((t, i) => (
-                <li key={i}><strong>{t.name}</strong> · {t.date} · Teams: {t.teams.join(', ')} · {t.notes}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="sop-h3">Challenge Match Policy</div>
-          <div className="sop-body">
-            <ul className="sop-list">
-              <li>Challenge up to 2 spots above your current position (e.g. #6 may challenge up to #4)</li>
-              <li>Singles set to 6, played at Monday Practices — Doubles on hold</li>
-              <li>Maximum of 3 challenge matches per week</li>
-              <li>If you challenge or are challenged, you may not challenge again that same week</li>
-              <li>If the challenger wins, the two players swap ladder positions</li>
-              <li>No-show by the challenged player for all match days = challenger automatically takes their spot</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Activities</div>
-          {ACTIVITIES.map((a, i) => (
-            <div key={i}>
-              <div className="sop-h3">{a.name}</div>
-              <div className="sop-body">
-                <p>{a.desc}</p>
-                <ul className="sop-list">
-                  {a.dates.map((d, j) => <li key={j}>Option {j + 1}: {d}</li>)}
-                </ul>
+          {LEADERBOARD.map(s => (
+            <div key={s.rank} className={`lb-row${s.school === 'SJSU' ? ' sjsu' : ''}`}>
+              <div className={`lb-rank${s.rank <= 3 ? ' gold' : ''}`}>{s.rank}</div>
+              <div className="lb-school">
+                {s.school}
               </div>
+              <div className="lb-stat">{s.wins}</div>
+              <div className="lb-stat">{s.losses}</div>
             </div>
           ))}
         </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Big/Little's Program</div>
-          <div className="sop-body">
-            <p>This mentorship program pairs new players with a returning member to create a welcoming environment. Big's shall be inviting, friendly, and knowledgeable — a supportive role model who sets a good example.</p>
-            <p>Designated WhatsApp group chats are created for Big's, Little's, and a shared group between each pair.</p>
-          </div>
-        </div>
-
-        <div className="sop-section reveal">
-          <div className="sop-h2">Member Agreement</div>
-          <div className="sop-body">
-            <p>By joining, members confirm they have received, read, and agree to comply with this SOP — including all attendance requirements, ladder policies, tournament expectations, financial obligations, and conduct standards.</p>
-            <p>Failure to comply may result in loss of ladder position, suspension from matches or tournaments, removal from the travel team, or dismissal from the organization.</p>
-            <p>This agreement remains in effect for the duration of the Member's participation during the academic semester in which it is signed.</p>
-          </div>
-        </div>
-
       </div>
     </div>
   );
@@ -1805,7 +1504,8 @@ function SOPPage() {
 
 // ─── ROOT APP ────────────────────────────────────────────────────────────────
 export default function App() {
-  const { user, login, logout: authLogout } = useAuth();
+  const [user,           setUser]           = useState(null);
+  const [users,          setUsers]          = useState(() => { try { return JSON.parse(localStorage.getItem('sjsu_users') || '[]'); } catch { return []; } });
   const [modal,          setModal]          = useState(null);
   const [page,           setPage]           = useState('home');
   const [matches,        setMatches]        = useState(INITIAL_MATCHES);
@@ -1823,7 +1523,9 @@ export default function App() {
   // Scroll to top on page change
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [page]);
 
-  const logout = () => { authLogout(); setPage('home'); };
+  const register = d  => { setUsers(u => { const next = [...u, d]; localStorage.setItem('sjsu_users', JSON.stringify(next)); return next; }); setUser(d); setModal(null); };
+  const login    = d  => { setUser(d); setModal(null); };
+  const logout   = () => { setUser(null); setPage('home'); };
 
   const saveMatch  = m => setMatches(p => [m, ...p]);
   const saveRoster = r => setRoster(r);
@@ -1833,38 +1535,25 @@ export default function App() {
       : pl
   ));
 
-  // Gate SOP page: only SJSU members can view it
-  const isMember = user?.schoolSlug === 'sjsu';
-
-  // Standings: SJSU (from React state) + any other localStorage-enrolled schools
-  const divisionStandings = (() => {
-    const sjsuEntry = { name: 'San Jose State University', wins: matches.filter(m => m.result === 'W').length, losses: matches.filter(m => m.result === 'L').length };
-    const others = getAllEnrolledSchools()
-      .filter(s => s.slug !== 'sjsu')
-      .map(s => {
-        const data = getSchoolData(s.slug) || s;
-        const ms = data.matches || [];
-        return { name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
-      });
-    return [sjsuEntry, ...others].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-  })();
-
   return (
     <>
+      {/* Ambient light orbs */}
+      <div className="amb amb-a" />
+      <div className="amb amb-b" />
+
       <Nav user={user} setModal={setModal} setPage={setPage} onLogout={logout} />
 
-      {page === 'home'        && <HomePage matches={matches} roster={roster} setPage={setPage} onSelectPlayer={setSelectedPlayer} isMember={isMember} divisionStandings={divisionStandings} />}
-      {page === 'schedule'    && <SchedulePage matches={matches} />}
+      {page === 'home'        && <HomePage matches={matches} roster={roster} setPage={setPage} onSelectPlayer={setSelectedPlayer} />}
+      {page === 'history'     && <HistoryPage matches={matches} />}
       {page === 'roster'      && <RosterPage roster={roster} onSelectPlayer={setSelectedPlayer} />}
-      {page === 'leaderboard' && <LeaderboardPage divisionStandings={divisionStandings} />}
-      {isMember && page === 'sop' && <SOPPage />}
+      {page === 'leaderboard' && <LeaderboardPage />}
       {selectedPlayer && <PlayerModal p={selectedPlayer} onClose={() => setSelectedPlayer(null)} />}
 
+      {modal === 'register'    && <RegisterModal    onClose={() => setModal(null)} onSuccess={register} />}
+      {modal === 'login'       && <LoginModal        onClose={() => setModal(null)} onSuccess={login} users={users} />}
       {modal === 'results'     && <InputResultsModal onClose={() => setModal(null)} onSave={saveMatch} />}
       {modal === 'roster-edit' && <EditRosterModal   roster={roster} onClose={() => setModal(null)} onSave={saveRoster} />}
       {modal === 'card-edit'   && user && <UpdateCardModal user={user} roster={roster} onClose={() => setModal(null)} onSave={saveCard} />}
-      {modal === 'login'       && <LoginModal    onClose={() => setModal(null)} onLogin={login} />}
-      {modal === 'register'    && <RegisterModal onClose={() => setModal(null)} onLogin={login} />}
     </>
   );
 }

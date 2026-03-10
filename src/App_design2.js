@@ -70,22 +70,18 @@ const Icons = {
   arrowDown: <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v8M3.5 7.5L7 11l3.5-3.5"/></svg>,
   arrowRight: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>,
   check: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l3.5 3.5L13 4.5"/></svg>,
-  // ── Tennis decorative icons (hand-drawn SVG) ──
-  tennisBall:   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"><circle cx="10" cy="10" r="8.5"/><path d="M2.5 8.5Q10 3 17.5 8.5"/><path d="M2.5 11.5Q10 17 17.5 11.5"/></svg>,
-  tennisRacket: <svg viewBox="0 0 18 26" fill="none" stroke="currentColor" strokeLinecap="round"><ellipse cx="9" cy="9.5" rx="7.5" ry="8.5" strokeWidth="1.2"/><line x1="3.5" y1="7" x2="14.5" y2="7" strokeWidth="0.7"/><line x1="2" y1="9.5" x2="16" y2="9.5" strokeWidth="0.7"/><line x1="3.5" y1="12" x2="14.5" y2="12" strokeWidth="0.7"/><line x1="6.5" y1="1.5" x2="6.5" y2="18" strokeWidth="0.7"/><line x1="9" y1="1" x2="9" y2="18" strokeWidth="0.7"/><line x1="11.5" y1="1.5" x2="11.5" y2="18" strokeWidth="0.7"/><line x1="9" y1="18" x2="9" y2="25.5" strokeWidth="2.2" strokeLinecap="round"/></svg>,
-  miniCourt:    <svg viewBox="0 0 32 20" fill="none" stroke="currentColor" strokeLinecap="round"><rect x="1" y="1" width="30" height="18" strokeWidth="1.1"/><line x1="16" y1="1" x2="16" y2="19" strokeWidth="1.3"/><line x1="1" y1="4.5" x2="31" y2="4.5" strokeWidth="0.7"/><line x1="1" y1="15.5" x2="31" y2="15.5" strokeWidth="0.7"/><line x1="7" y1="4.5" x2="7" y2="15.5" strokeWidth="0.7"/><line x1="25" y1="4.5" x2="25" y2="15.5" strokeWidth="0.7"/><line x1="7" y1="10" x2="25" y2="10" strokeWidth="0.7"/></svg>,
-  tennisPlayer: <svg viewBox="0 0 24 30" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="3.5" r="2.5"/><line x1="9" y1="6" x2="8" y2="17"/><line x1="9" y1="10" x2="19" y2="6.5"/><line x1="9" y1="10" x2="4" y2="13.5"/><line x1="8" y1="17" x2="14" y2="27"/><line x1="8" y1="17" x2="3" y2="26"/><ellipse cx="21.5" cy="5" rx="2.8" ry="3.8" transform="rotate(-35 21.5 5)" strokeWidth="1"/></svg>,
-  tennisNet:    <svg viewBox="0 0 30 14" fill="none" stroke="currentColor" strokeLinecap="round"><line x1="2" y1="2" x2="2" y2="13" strokeWidth="1.5"/><line x1="28" y1="2" x2="28" y2="13" strokeWidth="1.5"/><path d="M2 3.5Q15 5 28 3.5" strokeWidth="1.1"/><line x1="2" y1="13" x2="28" y2="13" strokeWidth="0.8"/><line x1="8" y1="4" x2="8" y2="13" strokeWidth="0.55"/><line x1="14" y1="4.5" x2="14" y2="13" strokeWidth="0.55"/><line x1="20" y1="4.5" x2="20" y2="13" strokeWidth="0.55"/><line x1="26" y1="4" x2="26" y2="13" strokeWidth="0.55"/><line x1="2" y1="8" x2="28" y2="8" strokeWidth="0.55"/><line x1="2" y1="11" x2="28" y2="11" strokeWidth="0.55"/></svg>,
 };
 
 // ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
 const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --c-bg:       #110f09;
-  --c-surf:     #181510;
-  --c-surf2:    #1e1b14;
+  --c-bg:       #070707;
+  --c-surf:     #0d0d0d;
+  --c-surf2:    #141414;
   --c-border:   rgba(255,255,255,.06);
   --c-border2:  rgba(255,255,255,.1);
   --c-gold:     #c9a96e;
@@ -101,7 +97,7 @@ const STYLES = `
   --r:          10px;
   --ease:       cubic-bezier(.25,.46,.45,.94);
   --spring:     cubic-bezier(.16,1,.3,1);
-  --font-disp:  'Barlow Condensed', sans-serif;
+  --font-disp:  'Bebas Neue', sans-serif;
   --font-ui:    'DM Sans', sans-serif;
   --font-mono:  'DM Mono', monospace;
 }
@@ -118,6 +114,31 @@ body {
   cursor: auto;
 }
 
+/* ── CURSOR ── */
+#csr {
+  position: fixed; z-index: 9999; pointer-events: none;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c-gold);
+  transform: translate(-50%,-50%);
+  transition: width .22s var(--spring), height .22s var(--spring), background .2s, opacity .2s;
+  will-change: transform;
+  top: 0; left: 0;
+}
+#csr.large {
+  width: 36px; height: 36px;
+  background: transparent;
+  border: 1.5px solid rgba(201,169,110,.55);
+}
+
+/* ── AMBIENT GLOW ── */
+.amb {
+  position: fixed; pointer-events: none; z-index: 0;
+  border-radius: 50%; filter: blur(140px);
+  animation: ambFloat 12s ease-in-out infinite alternate;
+}
+.amb-a { width:700px; height:700px; background:rgba(201,169,110,.06); top:-200px; left:-150px; }
+.amb-b { width:500px; height:500px; background:rgba(110,158,201,.05); bottom:-100px; right:-100px; animation-delay:-6s; }
+@keyframes ambFloat { from{transform:translate(0,0)} to{transform:translate(30px,40px)} }
 
 /* ── NOISE TEXTURE OVERLAY ── */
 body::before {
@@ -132,7 +153,7 @@ nav {
   height: var(--nav-h);
   display: flex; align-items: center;
   padding: 0 24px;
-  background: rgba(17,15,9,.75);
+  background: rgba(7,7,7,.75);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border-bottom: 1px solid var(--c-border);
@@ -141,13 +162,11 @@ nav {
 .nav-logo {
   font-family: var(--font-disp);
   font-size: 18px;
-  letter-spacing: 6px; text-transform: uppercase;
+  letter-spacing: 5px; text-transform: uppercase;
   color: var(--c-text); cursor: pointer;
   white-space: nowrap;
   position: absolute; left: 50%; transform: translateX(-50%);
-  transition: letter-spacing .35s var(--ease);
 }
-.nav-logo:hover { letter-spacing: 7px; }
 .nav-logo span { color: var(--c-gold); }
 
 .nav-left, .nav-right {
@@ -159,50 +178,40 @@ nav {
 /* Nav button */
 .nb {
   display: flex; align-items: center; gap: 5px;
-  padding: 6px 12px; border-radius: 7px;
+  padding: 6px 11px; border-radius: 7px;
   background: none; border: none; cursor: pointer;
-  font-family: var(--font-ui); font-size: 13px; font-weight: 500;
-  color: var(--c-muted); letter-spacing: 0;
-  transition: color .2s var(--ease), background .2s var(--ease);
-  position: relative;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--c-muted); letter-spacing: .4px;
+  transition: color .18s, background .18s;
 }
-.nb:hover, .nb.active { color: var(--c-text); background: rgba(255,255,255,.04); }
-.nb.active::after {
-  content: ''; position: absolute; bottom: 4px; left: 50%;
-  width: 3px; height: 3px; border-radius: 50%; background: var(--c-gold);
-  transform: translateX(-50%);
-}
+.nb:hover, .nb.active { color: var(--c-text); background: var(--c-surf2); }
 .nb .ic { width:14px; height:14px; display:flex; align-items:center; justify-content:center; }
-.nb .chev { width:13px; height:13px; opacity:.5; transition: transform .25s var(--spring), opacity .2s; }
-.nb.active .chev { transform: rotate(180deg); opacity: 1; }
+.nb .chev { width:14px; height:14px; transition: transform .2s var(--spring); }
+.nb.active .chev { transform: rotate(180deg); }
 
 /* Pill buttons */
 .pill {
-  padding: 7px 16px; border-radius: 8px; cursor: pointer;
-  font-family: var(--font-ui); font-size: 13px; font-weight: 500; letter-spacing: 0;
+  padding: 7px 18px; border-radius: 6px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
   background: none; border: 1px solid transparent;
-  color: var(--c-muted); transition: color .2s var(--ease), transform .18s var(--spring);
+  color: var(--c-muted); transition: all .18s;
 }
-.pill:hover { color: var(--c-text); transform: translateY(-1px); }
-.pill:active { transform: scale(.97); }
+.pill:hover { color: var(--c-text); }
 .pill.filled {
   background: none;
-  border: 1px solid rgba(201,169,110,.45);
+  border: 1px solid var(--c-gold);
   color: var(--c-gold);
-  transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), transform .18s var(--spring);
 }
-.pill.filled:hover { background: rgba(201,169,110,.07); color: var(--c-gold-hi); border-color: rgba(201,169,110,.65); box-shadow: 0 0 0 3px rgba(201,169,110,.06); transform: translateY(-1px); }
+.pill.filled:hover { background: rgba(201,169,110,.08); color: var(--c-gold-hi); border-color: var(--c-gold-hi); }
 
 .welcome-tag {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 12px; border-radius: 20px;
-  border: 1px solid rgba(201,169,110,.2);
-  background: rgba(201,169,110,.04);
-  font-family: var(--font-ui); font-size: 12px; font-weight: 500;
-  color: var(--c-gold); letter-spacing: 0;
-  transition: border-color .2s var(--ease), background .2s var(--ease);
+  border: 1px solid rgba(201,169,110,.25);
+  background: rgba(201,169,110,.05);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--c-gold); letter-spacing: .3px;
 }
-.welcome-tag:hover { border-color: rgba(201,169,110,.35); background: rgba(201,169,110,.07); }
 .welcome-tag .ic { width: 12px; height: 12px; }
 
 /* ── DROPDOWN ── */
@@ -346,21 +355,36 @@ nav {
   padding: 120px 72px 100px;
   min-height: 75vh; display: flex; flex-direction: column; justify-content: center;
   text-align: center;
-  background-color: #110f09;
+  background-color: #070707;
   background-image:
-    linear-gradient(to right, #110f09 0%, rgba(17,15,9,.5) 22%, rgba(17,15,9,.5) 78%, #110f09 100%),
-    linear-gradient(to bottom, rgba(17,15,9,.92) 0%, rgba(17,15,9,.65) 30%, rgba(17,15,9,.65) 70%, rgba(17,15,9,.97) 100%),
+    linear-gradient(to right, #070707 0%, rgba(7,7,7,.5) 22%, rgba(7,7,7,.5) 78%, #070707 100%),
+    linear-gradient(to bottom, rgba(7,7,7,.92) 0%, rgba(7,7,7,.65) 30%, rgba(7,7,7,.65) 70%, rgba(7,7,7,.97) 100%),
     url('/team.jpeg');
   background-size: cover;
   background-position: center;
 }
 
+/* Scan line animation */
+.hero::before {
+  content:''; position:absolute;
+  left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(201,169,110,.5) 40%, rgba(201,169,110,.5) 60%, transparent 100%);
+  animation: scanDown 2.8s var(--spring) .4s forwards;
+  opacity:0; top: var(--nav-h);
+}
+@keyframes scanDown {
+  0%  { top: var(--nav-h); opacity: 0 }
+  15% { opacity: .6 }
+  90% { opacity: 0 }
+  100%{ top: 85vh; opacity: 0 }
+}
 
 .hero-eyebrow {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--font-mono); font-size: 10px;
   color: var(--c-gold); letter-spacing: 2.5px; text-transform: uppercase;
   margin-bottom: 20px;
+  animation: riseIn .7s var(--spring) .1s both;
   justify-content: center;
 }
 .hero-eyebrow::before, .hero-eyebrow::after {
@@ -373,6 +397,7 @@ nav {
   font-weight: 400;
   line-height: .92;
   letter-spacing: 3px; color: #f0ece6;
+  animation: riseIn .85s var(--spring) .2s both;
 }
 .hero-h1 em { font-style: normal; color: var(--c-gold); }
 
@@ -380,16 +405,37 @@ nav {
   margin-top: 28px;
   font-family: var(--font-mono); font-size: 12px;
   color: rgba(240,236,230,.6); line-height: 1.8; max-width: 340px;
+  animation: riseIn .85s var(--spring) .35s both;
   margin-left: auto; margin-right: auto;
 }
 
+.hero-bg-text {
+  position: absolute; right: 40px; bottom: -30px;
+  font-family: var(--font-disp); font-size: clamp(160px,24vw,310px);
+  font-weight: 400; color: transparent;
+  -webkit-text-stroke: 1px rgba(201,169,110,.055);
+  line-height: 1; pointer-events: none; user-select: none;
+  letter-spacing: 4px;
+  animation: fadeIn .9s ease .5s both;
+}
+
+/* Parallax grid lines */
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(201,169,110,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,169,110,.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.6) 40%, transparent 100%);
+  animation: fadeIn 1.2s ease .6s both;
+}
 
 @keyframes riseIn { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
 /* ── STATS BAR ── */
 .stats-bar {
-  display: grid; grid-template-columns: 1.3fr 1fr 0.95fr 0.85fr;
+  display: grid; grid-template-columns: repeat(4,1fr);
   border-top: 1px solid var(--c-border);
   border-bottom: 1px solid var(--c-border);
   position: relative; z-index: 1;
@@ -424,7 +470,7 @@ nav {
 
 /* ── SECTION ── */
 .section {
-  padding: 80px 72px 60px;
+  padding: 72px;
   border-top: 1px solid var(--c-border);
   position: relative;
 }
@@ -490,10 +536,8 @@ nav {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1px; background: var(--c-bg);
-  border-radius: 12px;
+  border-radius: 12px; overflow: hidden;
 }
-.player-grid > .player-card:first-child { border-top-left-radius: 12px; }
-.player-grid > .player-card:last-child  { border-bottom-right-radius: 12px; }
 
 .player-card {
   background: var(--c-surf);
@@ -530,8 +574,6 @@ nav {
   margin-bottom: 14px; position: relative; z-index: 1;
 }
 .team-pill.A { border-color: rgba(201,169,110,.35); color: var(--c-gold); background: rgba(201,169,110,.05); }
-.team-pill.B { border-color: rgba(168,169,173,.35); color: #a8a9ad; background: rgba(168,169,173,.05); }
-.team-pill.C { border-color: rgba(139,98,52,.35); color: #8b6234; background: rgba(139,98,52,.05); }
 
 .player-avatar {
   width: 56px; height: 56px; border-radius: 50%;
@@ -581,8 +623,6 @@ nav {
   border: 1px solid var(--c-border); color: var(--c-muted); margin-bottom: 12px;
 }
 .pm-team-pill.A { border-color: rgba(201,169,110,.35); color: var(--c-gold); background: rgba(201,169,110,.05); }
-.pm-team-pill.B { border-color: rgba(168,169,173,.35); color: #a8a9ad; background: rgba(168,169,173,.05); }
-.pm-team-pill.C { border-color: rgba(139,98,52,.35); color: #8b6234; background: rgba(139,98,52,.05); }
 .pm-name { font-family: var(--font-disp); font-size: 42px; letter-spacing: 1px; line-height: 1; }
 .pm-role { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c-gold); margin-top: 8px; }
 .pm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
@@ -609,9 +649,7 @@ nav {
 .lb-head-lbl {
   font-family: var(--font-mono); font-size: 8.5px;
   letter-spacing: 2px; text-transform: uppercase; color: var(--c-muted2);
-  text-align: center;
 }
-.lb-head-lbl:nth-child(2) { text-align: left; }
 
 .lb-row {
   display: grid; grid-template-columns: 52px 1fr 40px 40px;
@@ -626,7 +664,7 @@ nav {
 
 .lb-rank {
   font-family: var(--font-disp); font-size: 22px; color: var(--c-muted2);
-  letter-spacing: 1px; text-align: center;
+  letter-spacing: 1px;
 }
 .lb-rank.gold { color: var(--c-gold); }
 
@@ -637,7 +675,7 @@ nav {
   background: var(--c-gold-glow); color: var(--c-gold);
   border: 1px solid rgba(201,169,110,.2);
 }
-.lb-stat { font-family: var(--font-mono); font-size: 12px; color: var(--c-muted); text-align: center; }
+.lb-stat { font-family: var(--font-mono); font-size: 12px; color: var(--c-muted); text-align: right; }
 
 /* ── PAGE HERO (inner pages) ── */
 .page-hero {
@@ -685,7 +723,7 @@ nav {
   padding: 5px 8px; background: var(--c-surf2);
   border: 1px solid var(--c-border); border-radius: 6px;
   color: var(--c-text); font-size: 12.5px; width: 100%; outline: none;
-  transition: border-color .15s; cursor: text;
+  transition: border-color .15s; cursor: none;
 }
 .er-input:focus { border-color: rgba(201,169,110,.4); }
 .arr-btn {
@@ -696,8 +734,11 @@ nav {
 .arr-btn:hover { color: var(--c-gold); background: var(--c-surf2); }
 .arr-btn svg { width: 13px; height: 13px; }
 
-/* ── SCROLL REVEAL (animations removed) ── */
-.reveal { opacity: 1; }
+/* ── SCROLL REVEAL ── */
+.reveal { opacity: 0; transform: translateY(20px); }
+.reveal.in { animation: riseIn .65s var(--spring) both; }
+.reveal.in-2 { animation: riseIn .65s var(--spring) .1s both; }
+.reveal.in-3 { animation: riseIn .65s var(--spring) .2s both; }
 
 /* ── FOOTER ── */
 .footer {
@@ -712,7 +753,7 @@ nav {
 /* ── RESPONSIVE ── */
 /* ── HOME PANELS ── */
 .home-panels {
-  display: grid; grid-template-columns: 1.4fr 1.3fr 0.8fr;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
   border-bottom: 1px solid var(--c-border);
 }
 .home-panel {
@@ -724,7 +765,7 @@ nav {
 .home-panel-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 16px 24px; border-bottom: 1px solid var(--c-border);
-  flex-shrink: 0; background: var(--c-surf); min-height: 52px;
+  flex-shrink: 0; background: var(--c-surf);
 }
 .home-panel-title {
   font-family: var(--font-mono); font-size: 9px;
@@ -753,7 +794,7 @@ nav {
 .view-all-sm .ic { width: 12px; height: 12px; }
 
 /* ── HOME INFO CARDS ── */
-.home-info-grid { display: grid; grid-template-columns: 1.5fr 0.9fr 1fr; gap: 12px; }
+.home-info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
 .home-info-card {
   background: var(--c-surf); border: 1px solid var(--c-border);
   border-radius: 12px; padding: 24px 28px;
@@ -857,11 +898,13 @@ nav {
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .hero, .section, .page-hero, .footer { padding-left: 24px; padding-right: 24px; }
+  .hero-bg-text, .hero-grid { display: none; }
   .stats-bar { grid-template-columns: 1fr 1fr; }
   .stat-cell { padding: 24px 28px; }
   .fg-2 { grid-template-columns: 1fr; }
   .match-row { grid-template-columns: 56px 1fr 40px; }
   .match-score { display: none; }
+  .amb { display: none; }
   .home-panels { grid-template-columns: 1fr; }
   .home-panel { border-right: none; border-bottom: 1px solid var(--c-border); height: 320px; }
   .home-panel:last-child { border-bottom: none; }
@@ -870,6 +913,40 @@ nav {
 }
 `;
 
+// ─── CURSOR ──────────────────────────────────────────────────────────────────
+function Cursor() {
+  const el = useRef(null);
+  const pos = useRef({ x: 0, y: 0 });
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const move = e => { pos.current = { x: e.clientX, y: e.clientY }; };
+    const tick = () => {
+      if (el.current) {
+        el.current.style.left = pos.current.x + 'px';
+        el.current.style.top  = pos.current.y + 'px';
+      }
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    window.addEventListener('mousemove', move);
+
+    const expand = e => { if (e.target.closest('button,a,input,select,[data-hover]') && el.current) el.current.classList.add('large'); };
+    const shrink = () => { if (el.current) el.current.classList.remove('large'); };
+    window.addEventListener('mouseover', expand);
+    window.addEventListener('mouseout', shrink);
+
+    return () => {
+      cancelAnimationFrame(raf.current);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseover', expand);
+      window.removeEventListener('mouseout', shrink);
+    };
+  }, []);
+
+  return <div id="csr" ref={el} />;
+}
+
 // ─── SCROLL REVEAL ────────────────────────────────────────────────────────────
 function useReveal() {
   useEffect(() => {
@@ -877,14 +954,8 @@ function useReveal() {
     const io = new IntersectionObserver(entries => {
       entries.forEach((e, i) => {
         if (e.isIntersecting) {
-          const cls = `in${i % 3 === 1 ? '-2' : i % 3 === 2 ? '-3' : ''}`;
-          e.target.classList.add(cls);
+          e.target.classList.add(`in${i % 3 === 1 ? '-2' : i % 3 === 2 ? '-3' : ''}`);
           io.unobserve(e.target);
-          e.target.addEventListener('animationend', () => {
-            e.target.classList.remove('reveal', cls);
-            e.target.style.opacity = '1';
-            e.target.style.transform = '';
-          }, { once: true });
         }
       });
     }, { threshold: 0.1 });
@@ -1248,7 +1319,7 @@ function PlayerCard({ p, pos, onSelect }) {
           ? <img src={p.photo} alt={p.name} />
           : <span className="player-avatar-placeholder">{p.name.charAt(0)}</span>}
       </div>
-      <div className={`team-pill${p.team === 'A' ? ' A' : p.team === 'B' ? ' B' : p.team === 'C' ? ' C' : ''}`}>{p.team} Team</div>
+      <div className={`team-pill${p.team === 'A' ? ' A' : ''}`}>{p.team} Team</div>
       <div className="player-name">{p.name}</div>
       {p.role && <div className="player-meta" style={{ color: 'var(--c-gold)', marginTop: 2 }}>{p.role}</div>}
       {p.utr > 0 && <>
@@ -1270,7 +1341,7 @@ function PlayerModal({ p, onClose }) {
     <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}><span className="ic">{Icons.close}</span></button>
-        <div className={`pm-team-pill${p.team === 'A' ? ' A' : p.team === 'B' ? ' B' : p.team === 'C' ? ' C' : ''}`}>{p.team} Team</div>
+        <div className={`pm-team-pill${p.team === 'A' ? ' A' : ''}`}>{p.team} Team</div>
         <div className="pm-name">{p.name}</div>
         {p.role && <div className="pm-role">{p.role}</div>}
         <div className="pm-stats">
@@ -1320,13 +1391,10 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
     <div>
       {/* HERO */}
       <div className="hero">
-        {/* Decorative tennis icons */}
-        <span aria-hidden="true" style={{ position:'absolute', right:'9%', top:'16%', width:100, height:100, opacity:.055, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(22deg)', display:'block' }}>{Icons.tennisRacket}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:'5%', bottom:'20%', width:52, height:52, opacity:.065, color:'var(--c-gold)', pointerEvents:'none', display:'block' }}>{Icons.tennisBall}</span>
-        <span aria-hidden="true" style={{ position:'absolute', right:'22%', bottom:'14%', width:80, height:80, opacity:.04, color:'#f0ece6', pointerEvents:'none', transform:'rotate(-8deg)', display:'block' }}>{Icons.miniCourt}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:'14%', top:'12%', width:64, height:64, opacity:.04, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(10deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
+        <div className="hero-grid" />
+        <div className="hero-bg-text">TOC</div>
         <div className="hero-eyebrow">NorCal TOC · 2025–26 Season</div>
-        <h1 className="hero-h1">hi</h1>
+        <h1 className="hero-h1">SJSU <em>CLUB</em> TENNIS</h1>
         <p className="hero-sub">The Official Site for San José State's Club Tennis Team</p>
       </div>
 
@@ -1334,7 +1402,7 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
       <div className="home-panels">
         {/* SCHEDULE */}
         <div className="home-panel">
-          <div className="home-panel-head" style={{ height: 52 }}>
+          <div className="home-panel-head">
             <span className="home-panel-title">Schedule</span>
             <button className="view-all-sm" onClick={() => setPage('schedule')}>
               View all <span className="ic">{Icons.arrowRight}</span>
@@ -1355,8 +1423,8 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
         </div>
 
         {/* ROSTER */}
-        <div className="home-panel" style={{ background: '#0c1008' }}>
-          <div className="home-panel-head" style={{ height: 52, background: '#121812' }}>
+        <div className="home-panel">
+          <div className="home-panel-head">
             <span className="home-panel-title">Roster</span>
             <button className="view-all-sm" onClick={() => setPage('roster')}>
               View all <span className="ic">{Icons.arrowRight}</span>
@@ -1383,8 +1451,8 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
         </div>
 
         {/* STANDINGS */}
-        <div className="home-panel" style={{ background: '#0c1008' }}>
-          <div className="home-panel-head" style={{ height: 52, background: '#121812' }}>
+        <div className="home-panel">
+          <div className="home-panel-head">
             <span className="home-panel-title">Standings</span>
             <button className="view-all-sm" onClick={() => setPage('leaderboard')}>
               View all <span className="ic">{Icons.arrowRight}</span>
@@ -1408,7 +1476,6 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
       {isMember && <>
         <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 18, letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--c-gold)', fontWeight: 'bold', padding: '56px var(--page-px) 0' }}>The Personal Stuff</div>
         <div className="section">
-          <span aria-hidden="true" style={{ position:'absolute', right:32, top:28, width:18, height:18, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(30deg)', display:'block' }}>{Icons.tennisBall}</span>
           <div className="section-tag">Schedule & Info</div>
           <div className="home-info-grid">
             <div className="home-info-card reveal">
@@ -1430,7 +1497,6 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
         </div>
 
         <div className="section">
-          <span aria-hidden="true" style={{ position:'absolute', left:40, bottom:36, width:20, height:20, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-12deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
           <div className="section-tag">Team Life</div>
           <div className="section-header">
             <h2 className="section-h2">Team<br />Activities</h2>
@@ -1453,8 +1519,6 @@ function HomePage({ roster, setPage, onSelectPlayer, isMember, divisionStandings
       </>}
 
       {isMember && <div className="section">
-        <span aria-hidden="true" style={{ position:'absolute', right:44, top:32, width:21, height:21, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(8deg)', display:'block' }}>{Icons.tennisNet}</span>
-        <span aria-hidden="true" style={{ position:'absolute', left:56, bottom:44, width:18, height:18, opacity:.07, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-25deg)', display:'block' }}>{Icons.tennisRacket}</span>
         <div className="section-tag">Ladder System</div>
         <div className="section-header">
           <h2 className="section-h2">Challenge<br />Match Rules</h2>
@@ -1503,7 +1567,6 @@ function SchedulePage({ matches }) {
   return (
     <div className="page">
       <div className="page-hero" data-word="SCHEDULE">
-        <span aria-hidden="true" style={{ position:'absolute', right:'7%', bottom:'18%', width:20, height:20, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(14deg)', display:'block' }}>{Icons.miniCourt}</span>
         <div className="page-eyebrow">2025–26 Season</div>
         <h1 className="page-h1">Schedule</h1>
         <div className="page-meta">
@@ -1523,7 +1586,6 @@ function SchedulePage({ matches }) {
       </div>
 
       <div className="section" style={{ borderTop: 'none' }}>
-        <span aria-hidden="true" style={{ position:'absolute', right:36, bottom:40, width:20, height:20, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(18deg)', display:'block' }}>{Icons.miniCourt}</span>
         <div className="section-tag">Upcoming Matches</div>
         <div className="tourn-grid">
           {TOURNAMENTS.map((t, i) => (
@@ -1590,7 +1652,6 @@ function RosterPage({ roster, onSelectPlayer }) {
   return (
     <div className="page">
       <div className="page-hero" data-word="SQUAD">
-        <span aria-hidden="true" style={{ position:'absolute', right:'12%', top:'22%', width:22, height:22, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(-20deg) scaleX(-1)', display:'block' }}>{Icons.tennisPlayer}</span>
         <div className="page-eyebrow">2025–26 · SJSU Club Tennis</div>
         <h1 className="page-h1">Roster</h1>
         <div className="page-meta">
@@ -1634,32 +1695,31 @@ function LeaderboardPage({ divisionStandings }) {
   const standings = divisionStandings || [];
   return (
     <div className="page">
-      <div className="page-hero" data-word="RANKS" style={{ textAlign: 'center' }}>
-        <span aria-hidden="true" style={{ position:'absolute', left:'8%', bottom:'20%', width:19, height:19, opacity:.09, color:'var(--c-gold)', pointerEvents:'none', display:'block' }}>{Icons.tennisBall}</span>
-        <div className="page-eyebrow" style={{ textAlign: 'center' }}>NorCal USTA Tennis on Campus · 2025–26</div>
-        <h1 className="page-h1" style={{ textAlign: 'center' }}>Standings</h1>
+      <div className="page-hero" data-word="RANKS">
+        <div className="page-eyebrow">NorCal USTA Tennis on Campus · 2025–26</div>
+        <h1 className="page-h1">Standings</h1>
       </div>
-      <div className="section" style={{ borderTop: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div className="lb reveal" style={{ width: '100%', maxWidth: 700 }}>
-          <div className="lb-head" style={{ textAlign: 'center' }}>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>#</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>School</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>W</span>
-            <span className="lb-head-lbl" style={{ textAlign: 'center' }}>L</span>
+      <div className="section" style={{ borderTop: 'none' }}>
+        <div className="lb reveal">
+          <div className="lb-head">
+            <span className="lb-head-lbl">#</span>
+            <span className="lb-head-lbl">School</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>W</span>
+            <span className="lb-head-lbl" style={{ textAlign: 'right' }}>L</span>
           </div>
           {standings.length === 0
-            ? <div className="lb-row hl" style={{ textAlign: 'center' }}>
-                <div className="lb-rank gold" style={{ textAlign: 'center' }}>1</div>
-                <div className="lb-school" style={{ justifyContent: 'center' }}>San Jose State University</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>—</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>—</div>
+            ? <div className="lb-row hl">
+                <div className="lb-rank gold">1</div>
+                <div className="lb-school">San Jose State University</div>
+                <div className="lb-stat">—</div>
+                <div className="lb-stat">—</div>
               </div>
             : standings.map((s, i) => (
-              <div key={s.name} className="lb-row hl" style={{ textAlign: 'center' }}>
-                <div className={`lb-rank${i === 0 ? ' gold' : ''}`} style={{ textAlign: 'center' }}>{i + 1}</div>
-                <div className="lb-school" style={{ justifyContent: 'center' }}>{s.name}</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>{s.wins}</div>
-                <div className="lb-stat" style={{ textAlign: 'center' }}>{s.losses}</div>
+              <div key={s.name} className="lb-row hl">
+                <div className={`lb-rank${i === 0 ? ' gold' : ''}`}>{i + 1}</div>
+                <div className="lb-school">{s.name}</div>
+                <div className="lb-stat">{s.wins}</div>
+                <div className="lb-stat">{s.losses}</div>
               </div>
             ))
           }
@@ -1675,7 +1735,6 @@ function SOPPage() {
   return (
     <div className="page">
       <div className="page-hero" data-word="SOP">
-        <span aria-hidden="true" style={{ position:'absolute', right:'6%', top:'28%', width:22, height:22, opacity:.08, color:'var(--c-gold)', pointerEvents:'none', transform:'rotate(5deg)', display:'block' }}>{Icons.tennisNet}</span>
         <div className="page-eyebrow">SJSU Club Tennis · As of March 2, 2026</div>
         <h1 className="page-h1">Standard<br />Operating<br />Procedures</h1>
         <div className="page-meta">
@@ -1851,6 +1910,10 @@ export default function App() {
 
   return (
     <>
+      {/* Ambient light orbs */}
+      <div className="amb amb-a" />
+      <div className="amb amb-b" />
+
       <Nav user={user} setModal={setModal} setPage={setPage} onLogout={logout} />
 
       {page === 'home'        && <HomePage matches={matches} roster={roster} setPage={setPage} onSelectPlayer={setSelectedPlayer} isMember={isMember} divisionStandings={divisionStandings} />}
