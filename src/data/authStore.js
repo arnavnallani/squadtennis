@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 // ─── RESOLVE JOIN CODE → { schoolSlug, role } ─────────────────────────────────
 export async function resolveCode(raw) {
   const code = (raw || '').toUpperCase().trim();
-  if (code.length !== 6) return null;
+  if (code.length < 6) return null;
   const { data } = await supabase
     .from('schools')
     .select('slug, officer_code, player_code')

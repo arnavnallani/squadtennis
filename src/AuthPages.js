@@ -188,7 +188,7 @@ export function RegisterPage() {
     if (k === 'code') {
       if (err) setErr('');
       const upper = val.toUpperCase().trim();
-      if (upper.length === 6) {
+      if (upper.length >= 6) {
         setResolving(true);
         resolveCode(upper).then(r => { setResolved(r); setResolving(false); });
       } else {
