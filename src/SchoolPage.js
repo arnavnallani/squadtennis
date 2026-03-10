@@ -1355,7 +1355,7 @@ function SchoolNotFound({ slug }) {
 }
 
 // ─── SJSU DEFAULT SEED DATA ───────────────────────────────────────────────────
-const SJSU_SEED = {
+export const SJSU_SEED = {
   name: 'San Jose State University',
   slug: 'sjsu',
   colors: { accent: '#c9a96e', accentHi: '#e4c98c', accentGlow: 'rgba(201,169,110,.15)' },
