@@ -19,7 +19,7 @@ async function fetchTopPlayers() {
     const roster = school.roster || [];
     const label  = school.name.split(' ').slice(0, 2).join(' ');
     for (const p of roster) {
-      const entry = { name: p.name, school: label, role: p.role || '' };
+      const entry = { ...p, schoolLabel: label, schoolSlug: school.slug, schoolName: school.name };
       if (p.gender === 'F') ladies.push(entry);
       else                  gentlemen.push(entry);
     }
@@ -33,7 +33,7 @@ async function fetchColleges() {
   return enrolled
     .map(s => {
       const ms = s.matches || [];
-      return { name: s.name, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
+      return { name: s.name, slug: s.slug, wins: ms.filter(m => m.result === 'W').length, losses: ms.filter(m => m.result === 'L').length };
     })
     .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 }
@@ -47,6 +47,7 @@ const Icons = {
   globe:       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5c-2 1.5-2 8 0 11M8 2.5c2 1.5 2 8 0 11M2.5 8h11"/></svg>,
   user:        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="6" r="3"/><path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>,
   logout:      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>,
+  close:       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>,
   maleAvatar:  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><circle cx="12" cy="7" r="4"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7H5z"/></svg>,
   femaleAvatar:<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><circle cx="12" cy="7" r="4"/><path d="M9 14l-4 7h14l-4-7c-.8.9-1.9 1.5-3 1.5s-2.2-.6-3-1.5z"/></svg>,
   // ── Tennis decorative icons ──
@@ -1049,6 +1050,308 @@ function SquadNav({ onHome, onFindCollege }) {
   );
 }
 
+// ─── PLAYER MODAL (home page) ─────────────────────────────────────────────────
+// ─── TEAM PILL STYLES ─────────────────────────────────────────────────────────
+function teamPillStyle(team) {
+  if (team === 'A') return { color: '#d4a843', background: 'rgba(212,168,67,.1)', border: '1px solid rgba(212,168,67,.35)' };
+  if (team === 'B') return { color: '#a8a9ad', background: 'rgba(168,169,173,.08)', border: '1px solid rgba(168,169,173,.3)' };
+  if (team === 'C') return { color: '#cd7f32', background: 'rgba(205,127,50,.08)', border: '1px solid rgba(205,127,50,.3)' };
+  return { color: 'rgba(240,236,230,.4)', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)' };
+}
+
+// ─── MODAL CLOSE BUTTON ───────────────────────────────────────────────────────
+function ModalCloseBtn({ onClose }) {
+  return (
+    <button
+      onClick={onClose}
+      style={{
+        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
+        color: 'rgba(240,236,230,.5)', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'background .15s, color .15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.12)'; e.currentTarget.style.color = 'rgba(240,236,230,.9)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; e.currentTarget.style.color = 'rgba(240,236,230,.5)'; }}
+    >
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 14, height: 14 }}>
+        <path d="M5 5l10 10M15 5L5 15"/>
+      </svg>
+    </button>
+  );
+}
+
+// ─── PLAYER MODAL (home page) ─────────────────────────────────────────────────
+function PlayerModal({ p, onClose }) {
+  const pillStyle = teamPillStyle(p.team);
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(20px) saturate(160%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px', animation: 'sqFadeIn .14s ease',
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        width: '100%', maxWidth: 440,
+        background: '#141813',
+        border: '1px solid rgba(255,255,255,.11)',
+        borderRadius: 18,
+        boxShadow: '0 48px 100px rgba(0,0,0,.92)',
+        animation: 'sqRiseIn .2s var(--spring)',
+        overflow: 'hidden',
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 28px 20px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 500, color: 'rgba(240,236,230,.28)' }}>Player Card</div>
+          <ModalCloseBtn onClose={onClose} />
+        </div>
+
+        {/* Player identity */}
+        <div style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+            <div style={{
+              width: 68, height: 68, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(255,255,255,.06)', border: '1.5px solid rgba(255,255,255,.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+            }}>
+              {p.photo
+                ? <img src={p.photo} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontFamily: 'var(--font-disp)', fontSize: 26, color: 'rgba(240,236,230,.35)', lineHeight: 1 }}>{(p.name || '?').charAt(0)}</span>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {p.team && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  fontFamily: 'var(--font-ui)', fontSize: 10, fontWeight: 600,
+                  padding: '3px 9px', borderRadius: 5,
+                  marginBottom: 10, ...pillStyle,
+                }}>{p.team} Team</div>
+              )}
+              <div style={{ fontFamily: 'var(--font-disp)', fontSize: 36, letterSpacing: '1.5px', lineHeight: 1, color: 'var(--c-text)', wordBreak: 'break-word' }}>{p.name}</div>
+              {p.role && (
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 500, color: 'var(--c-green)', marginTop: 8 }}>{p.role}</div>
+              )}
+              {(p.schoolLabel || p.schoolName) && (
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'rgba(240,236,230,.4)', marginTop: 6 }}>
+                  {p.schoolLabel || p.schoolName}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '20px 28px 28px', gap: 10 }}>
+          {[['UTR Rating', p.utr || '—'], ['Wins', p.wins ?? 0], ['Losses', p.losses ?? 0]].map(([lbl, val]) => (
+            <div key={lbl} style={{
+              background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 10, padding: '16px 18px',
+            }}>
+              <div style={{ fontFamily: 'var(--font-disp)', fontSize: 38, letterSpacing: '1px', lineHeight: 1, color: 'var(--c-text)' }}>{val}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(240,236,230,.3)', marginTop: 6 }}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SCHOOL PREVIEW MODAL ─────────────────────────────────────────────────────
+function SchoolPreviewModal({ schoolName, schoolSlug, onClose }) {
+  const navigate = useNavigate();
+  const [schoolData, setSchoolData] = useState(null);
+  const [tab, setTab] = useState('matches');
+
+  useEffect(() => {
+    if (schoolSlug) getSchoolData(schoolSlug).then(setSchoolData);
+  }, [schoolSlug]);
+
+  const fmt = d => {
+    if (!d) return '';
+    const date = new Date(d);
+    return isNaN(date) ? d : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const recentMatches = schoolData
+    ? [...(schoolData.matches || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8)
+    : [];
+  const tournaments = schoolData?.tournaments || [];
+  const roster      = schoolData?.roster || [];
+  const gentlemen   = roster.filter(p => p.gender !== 'F');
+  const ladies      = roster.filter(p => p.gender === 'F');
+
+  const TABS = [
+    { id: 'matches',  label: 'Recent Matches' },
+    { id: 'schedule', label: 'Schedule' },
+    { id: 'roster',   label: 'Roster' },
+  ];
+
+  const RosterRow = ({ p, idx }) => {
+    const ps = teamPillStyle(p.team);
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <div style={{ fontFamily: 'var(--font-disp)', fontSize: 18, lineHeight: 1, color: 'rgba(255,255,255,.22)', width: 22, textAlign: 'center', flexShrink: 0 }}>{idx + 1}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 13.5, fontWeight: 500, color: 'var(--c-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+          {p.role && <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 500, color: 'var(--c-green)', marginTop: 3 }}>{p.role}</div>}
+        </div>
+        {p.utr ? (
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 500, color: 'rgba(240,236,230,.38)', flexShrink: 0 }}>UTR {p.utr}</div>
+        ) : null}
+        {p.team && (
+          <div style={{
+            padding: '2px 8px', borderRadius: 4, flexShrink: 0,
+            fontFamily: 'var(--font-ui)', fontSize: 10, fontWeight: 600,
+            ...ps,
+          }}>{p.team} Team</div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(20px) saturate(160%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px', animation: 'sqFadeIn .14s ease',
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        width: '100%', maxWidth: 560, maxHeight: '88vh',
+        background: '#141813',
+        border: '1px solid rgba(255,255,255,.11)',
+        borderRadius: 18,
+        boxShadow: '0 48px 100px rgba(0,0,0,.92)',
+        animation: 'sqRiseIn .2s var(--spring)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* ── TOP BAR: eyebrow + close ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 500, color: 'rgba(240,236,230,.28)' }}>Club Tennis</div>
+          <ModalCloseBtn onClose={onClose} />
+        </div>
+
+        {/* ── SCHOOL NAME ── */}
+        <div style={{ padding: '0 28px 18px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+          <div style={{ fontFamily: 'var(--font-disp)', fontSize: 34, letterSpacing: '2px', lineHeight: 1, color: 'var(--c-text)' }}>{schoolName}</div>
+        </div>
+
+        {/* ── TAB BAR ── */}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(255,255,255,.07)', flexShrink: 0, padding: '0 28px' }}>
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                padding: '13px 16px 12px', background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-ui)', fontSize: 12.5, fontWeight: 600,
+                color: tab === t.id ? 'var(--c-text)' : 'rgba(240,236,230,.35)',
+                borderBottom: tab === t.id ? '2px solid var(--c-green)' : '2px solid transparent',
+                marginBottom: -1, transition: 'color .15s',
+              }}
+            >{t.label}</button>
+          ))}
+        </div>
+
+        {/* ── SCROLLABLE BODY ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 28px 8px' }}>
+          {/* Loading */}
+          {schoolData === null && (
+            <div style={{ padding: '52px 0', textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 500, color: 'rgba(240,236,230,.22)' }}>Loading…</div>
+          )}
+
+          {/* MATCHES */}
+          {schoolData !== null && tab === 'matches' && (
+            recentMatches.length === 0
+              ? <div style={{ padding: '52px 0', textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 500, color: 'rgba(240,236,230,.22)' }}>No match results yet</div>
+              : recentMatches.map((m, i) => (
+                <div key={m.id || i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+                    background: m.result === 'W' ? '#0d2b1f' : '#2b0f0f',
+                    color: m.result === 'W' ? '#4dbd85' : '#c95050',
+                    fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>{m.result}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: 13.5, fontWeight: 500, color: 'var(--c-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>vs {m.opponent}</div>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 400, color: 'rgba(240,236,230,.35)', marginTop: 3 }}>
+                      {fmt(m.date)}{m.location ? ` · ${m.location}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 500, color: 'rgba(240,236,230,.45)', flexShrink: 0 }}>{m.score}</div>
+                </div>
+              ))
+          )}
+
+          {/* SCHEDULE */}
+          {schoolData !== null && tab === 'schedule' && (
+            tournaments.length === 0
+              ? <div style={{ padding: '52px 0', textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 500, color: 'rgba(240,236,230,.22)' }}>No upcoming events</div>
+              : tournaments.map((t, i) => (
+                <div key={i} style={{ padding: '18px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: 14, fontWeight: 600, color: 'var(--c-text)', marginBottom: 5 }}>{t.name}</div>
+                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 500, color: 'var(--c-green)', marginBottom: t.teams?.length > 0 ? 5 : 0 }}>{t.date}</div>
+                  {t.teams?.length > 0 && (
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'rgba(240,236,230,.32)' }}>Teams: {t.teams.join(', ')}</div>
+                  )}
+                </div>
+              ))
+          )}
+
+          {/* ROSTER */}
+          {schoolData !== null && tab === 'roster' && (
+            roster.length === 0
+              ? <div style={{ padding: '52px 0', textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 500, color: 'rgba(240,236,230,.22)' }}>No roster data yet</div>
+              : <>
+                {gentlemen.length > 0 && (
+                  <>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', color: 'rgba(240,236,230,.28)', padding: '16px 0 8px' }}>Gentlemen</div>
+                    {gentlemen.map((p, i) => <RosterRow key={p.id || i} p={p} idx={i} />)}
+                  </>
+                )}
+                {ladies.length > 0 && (
+                  <>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', color: 'rgba(240,236,230,.28)', padding: `${gentlemen.length > 0 ? '24px' : '16px'} 0 8px` }}>Ladies</div>
+                    {ladies.map((p, i) => <RosterRow key={p.id || i} p={p} idx={i} />)}
+                  </>
+                )}
+              </>
+          )}
+        </div>
+
+        {/* ── FOOTER ── */}
+        <div style={{
+          padding: '14px 28px', borderTop: '1px solid rgba(255,255,255,.07)',
+          flexShrink: 0, display: 'flex', justifyContent: 'flex-end',
+        }}>
+          <button
+            onClick={() => { navigate(`/schools/${schoolSlug}`); onClose(); }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 0', background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 500,
+              color: 'rgba(240,236,230,.45)',
+              transition: 'color .18s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(240,236,230,.85)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(240,236,230,.45)'; }}
+          >
+            Go to their home page →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── STANDINGS TABLE ──────────────────────────────────────────────────────────
 function StandingsTable({ colleges, limit }) {
   const list = colleges || [];
@@ -1278,8 +1581,10 @@ function TennisCourtBg() {
 function SquadHomePage() {
   useReveal();
   const navigate = useNavigate();
-  const [colleges, setColleges]     = useState(null);
-  const [topPlayers, setTopPlayers] = useState(null);
+  const [colleges, setColleges]         = useState(null);
+  const [topPlayers, setTopPlayers]     = useState(null);
+  const [selectedSchool, setSelectedSchool] = useState(null); // { name, slug }
+  const [selectedPlayer, setSelectedPlayer] = useState(null); // full player object
   const countdown = useCountdown(UCB_INVITATIONAL);
 
   const refresh = useCallback(() => {
@@ -1360,7 +1665,7 @@ function SquadHomePage() {
                 No colleges enrolled yet
               </div>
             ) : colleges.map((c, i) => (
-              <div key={c.name} className="sq-panel-item">
+              <div key={c.name} className="sq-panel-item" onClick={() => setSelectedSchool({ name: c.name, slug: c.slug })} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     fontFamily: 'var(--font-disp)', fontSize: 22, lineHeight: 1,
@@ -1383,7 +1688,7 @@ function SquadHomePage() {
         {(() => {
           const { gentlemen, ladies } = topPlayers || { gentlemen: [], ladies: [] };
           const renderList = (list, gender) => list.map((p, i) => (
-            <div key={i} className="sq-panel-item">
+            <div key={i} className="sq-panel-item" onClick={() => setSelectedPlayer(p)} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ fontFamily: 'var(--font-disp)', fontSize: 20, lineHeight: 1, color: i < 3 ? '#ffffff' : 'rgba(255,255,255,.4)', width: 22, flexShrink: 0, textAlign: 'center' }}>{i + 1}</div>
                 <span style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: i < 3 ? '#ffffff' : 'rgba(255,255,255,.55)' }}>
@@ -1391,7 +1696,7 @@ function SquadHomePage() {
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#ffffff' }}>{p.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,.7)', letterSpacing: '.3px', marginTop: 2 }}>{p.school}{p.role ? ` · ${p.role}` : ''}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,.7)', letterSpacing: '.3px', marginTop: 2 }}>{p.schoolLabel}{p.role ? ` · ${p.role}` : ''}</div>
                 </div>
               </div>
             </div>
@@ -1427,6 +1732,20 @@ function SquadHomePage() {
           USTA Tennis on Campus · 2025–26 Season
         </div>
       </footer>
+
+      {selectedSchool && (
+        <SchoolPreviewModal
+          schoolName={selectedSchool.name}
+          schoolSlug={selectedSchool.slug}
+          onClose={() => setSelectedSchool(null)}
+        />
+      )}
+      {selectedPlayer && (
+        <PlayerModal
+          p={selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
+        />
+      )}
     </div>
   );
 }
