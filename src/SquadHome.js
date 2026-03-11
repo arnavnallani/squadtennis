@@ -862,14 +862,14 @@ function FindCollegeModal({ onClose }) {
   // Auto-focus
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const [enrolledSchools, setEnrolledSchools] = useState([]);
+  const [enrolledSchools, setEnrolledSchools] = useState(null);
   useEffect(() => { getAllEnrolledSchools().then(setEnrolledSchools); }, []);
 
   const trimmed = query.trim();
 
   const results = trimmed.length > 0
     ? SCHOOLS.filter(s => s.name.toLowerCase().includes(trimmed.toLowerCase()))
-    : enrolledSchools;
+    : (enrolledSchools || []);
 
   const noMatch = trimmed.length > 2 && results.length === 0;
 
@@ -920,7 +920,10 @@ function FindCollegeModal({ onClose }) {
               <div className="fc-list-label">
                 {trimmed ? `${results.length} result${results.length !== 1 ? 's' : ''}` : 'Enrolled'}
               </div>
-              {!trimmed && results.length === 0 && (
+              {!trimmed && enrolledSchools === null && (
+                <div className="fc-empty-enrolled" style={{ opacity: 0.45 }}>Loading…</div>
+              )}
+              {!trimmed && enrolledSchools !== null && results.length === 0 && (
                 <div className="fc-empty-enrolled">No colleges enrolled yet.</div>
               )}
               {results.map(school => (
@@ -1048,7 +1051,8 @@ function SquadNav({ onHome, onFindCollege }) {
 
 // ─── STANDINGS TABLE ──────────────────────────────────────────────────────────
 function StandingsTable({ colleges, limit }) {
-  const shown = limit ? colleges.slice(0, limit) : colleges;
+  const list = colleges || [];
+  const shown = limit ? list.slice(0, limit) : list;
   return (
     <div className="sq-lb sq-reveal">
       <div className="sq-lb-head">
@@ -1057,7 +1061,7 @@ function StandingsTable({ colleges, limit }) {
         <span className="sq-lb-head-lbl">W</span>
         <span className="sq-lb-head-lbl">L</span>
       </div>
-      {shown.length === 0 ? (
+      {colleges === null ? null : shown.length === 0 ? (
         <div className="sq-empty">
           <div className="sq-empty-dot" />
           No colleges enrolled yet
@@ -1274,8 +1278,8 @@ function TennisCourtBg() {
 function SquadHomePage() {
   useReveal();
   const navigate = useNavigate();
-  const [colleges, setColleges]     = useState([]);
-  const [topPlayers, setTopPlayers] = useState({ gentlemen: [], ladies: [] });
+  const [colleges, setColleges]     = useState(null);
+  const [topPlayers, setTopPlayers] = useState(null);
   const countdown = useCountdown(UCB_INVITATIONAL);
 
   const refresh = useCallback(() => {
@@ -1350,7 +1354,7 @@ function SquadHomePage() {
             </button>
           </div>
           <div className="sq-side-panel-body">
-            {colleges.length === 0 ? (
+            {colleges === null ? null : colleges.length === 0 ? (
               <div className="sq-empty">
                 <div className="sq-empty-dot" />
                 No colleges enrolled yet
@@ -1377,7 +1381,7 @@ function SquadHomePage() {
 
         {/* TOP PLAYERS — right panel */}
         {(() => {
-          const { gentlemen, ladies } = topPlayers;
+          const { gentlemen, ladies } = topPlayers || { gentlemen: [], ladies: [] };
           const renderList = (list, gender) => list.map((p, i) => (
             <div key={i} className="sq-panel-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1431,11 +1435,11 @@ function SquadHomePage() {
 function SquadStandingsPage() {
   useReveal();
   const [query, setQuery]           = useState('');
-  const [allColleges, setAllColleges] = useState([]);
+  const [allColleges, setAllColleges] = useState(null);
 
   useEffect(() => { fetchColleges().then(setAllColleges); }, []);
 
-  const filtered = allColleges.filter(c =>
+  const filtered = (allColleges || []).filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );
 
